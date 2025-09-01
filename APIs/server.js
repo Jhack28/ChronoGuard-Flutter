@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'SENA123',
+  password: '1000991521',
   database: 'ChronoDB_db',
 });
 
@@ -50,8 +50,32 @@ app.post('/login', (req, res) => {
   );
 });
 
+app.get('/empleado/lista', (req, res) => {
+  db.query(
+    `SELECT 
+      u.ID_Usuario, 
+      u.Nombre, 
+      u.Correo, 
+      r.tipo AS Rol, 
+      d.tipo AS Departamento, 
+      u.Numero_de_Documento, 
+      u.Estado
+    FROM Usuarios u
+    LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
+    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento
+    WHERE u.ID_Rol = 3`, // 3 = Empleado, ajusta según tu BD
+    (err, results) => {
+      if (err) {
+        console.error('Error en consulta SQL:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+    }
+  );
+});
+
 // Iniciar el servidor en puerto 3000
 const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`API escuchando en puerto ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`API escuchando en http://10.1.195.38:${PORT}`);
 });
