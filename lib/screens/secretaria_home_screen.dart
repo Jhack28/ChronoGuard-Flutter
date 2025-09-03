@@ -6,7 +6,7 @@ import '../widgets/empleados_table.dart';
 import '../widgets/asistencias_table.dart';
 
 class SecretariaHomeScreen extends StatefulWidget {
-  const SecretariaHomeScreen({Key? key}) : super(key: key);
+  const SecretariaHomeScreen({super.key});
 
   @override
   _SecretariaHomeScreenState createState() => _SecretariaHomeScreenState();
@@ -73,7 +73,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   onChanged: (v) => salida = v,
                 ),
                 DropdownButtonFormField<String>(
-                  value: estado,
+                  initialValue: estado,
                   decoration: const InputDecoration(labelText: 'Estado'),
                   items: ['Puntual', 'Tarde', 'Ausente']
                       .map((e) => DropdownMenuItem(value: e, child: Text(e)))
@@ -232,13 +232,15 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       },
     );
   }
+  
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Secretaria'),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(197, 3, 19, 110),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

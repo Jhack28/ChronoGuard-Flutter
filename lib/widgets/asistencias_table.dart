@@ -8,8 +8,8 @@ class AsistenciasTable extends StatelessWidget {
   const AsistenciasTable({
     required this.asistencias,
     required this.onRegistrar,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

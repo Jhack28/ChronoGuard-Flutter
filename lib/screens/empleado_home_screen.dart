@@ -4,10 +4,10 @@ import '../models/empleado.dart';
 import 'package:flutter/material.dart';
 
 class EmpleadoHomeScreen extends StatelessWidget {
-  const EmpleadoHomeScreen({Key? key}) : super(key: key);
+  const EmpleadoHomeScreen({super.key});
 
   static Future<List<Empleado>> fetchEmpleados() async {
-    final response = await http.get(Uri.parse('http://localhost:5170/usuarios'));
+    final response = await http.get(Uri.parse('http://localhost:5170/Usuarios'));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.map((e) => Empleado.fromJson(e)).toList();

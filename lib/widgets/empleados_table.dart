@@ -12,8 +12,8 @@ class EmpleadosTable extends StatelessWidget {
     required this.loading,
     required this.onRegistrarAsistencia,
     required this.onEnviarReporte,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

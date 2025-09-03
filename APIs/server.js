@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: '1000991521',
+  password: 'SENA123',
   database: 'ChronoDB_db',
 });
 
@@ -50,6 +50,7 @@ app.post('/login', (req, res) => {
   );
 });
 
+
 app.get('/empleado/lista', (req, res) => {
   db.query(
     `SELECT 
@@ -74,8 +75,99 @@ app.get('/empleado/lista', (req, res) => {
   );
 });
 
+// ENDPOINTS admin
+
+app.get('/usuario/lista', (req, res) => {
+  db.query(
+    `SELECT 
+      u.ID_Usuario, 
+      u.Nombre, 
+      u.Correo, 
+      r.tipo AS Rol, 
+      d.tipo AS Departamento, 
+      u.Numero_de_Documento, 
+      u.Estado
+    FROM Usuarios u
+    LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
+    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento`, // 3 = Empleado, ajusta según tu BD
+    (err, results) => {
+      if (err) {
+        console.error('Error en consulta SQL:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+    }
+  );
+});
+
+app.post('/admin', (req, res) => {
+  const { nombre, email, password, rol, numero_de_documento, departamento } = req.body;
+
+  // Ajustar ID_Rol y ID_Departamento según base de datos
+  const idRol = rol; // Asume que recibes el ID de rol
+  const idDepartamento = departamento || null;
+
+  db.query(
+    `INSERT INTO Usuarios (Nombre, Correo, Password, ID_Rol, Numero_de_Documento, ID_Departamento, Estado) 
+     VALUES (?, ?, ?, ?, ?, ?, 'Activo')`,
+    [nombre, email, password, idRol, numero_de_documento, idDepartamento],
+    (err, result) => {
+      if (err) {
+        console.error('Error al insertar empleado:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(201).json({ message: 'Empleado creado', id: result.insertId });
+    }
+  );
+});
+
+app.put('/usuarios/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre, email, rol, departamento, numero_de_documento } = req.body;
+
+  const idRol = rol;
+  const idDepartamento = departamento || null;
+
+  db.query(
+    `UPDATE Usuarios 
+     SET Nombre = ?, Correo = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+     WHERE ID_Usuario = ?`,
+    [nombre, email, idRol, idDepartamento, numero_de_documento, id],
+    (err) => {
+      if (err) {
+        console.error('Error al actualizar empleado:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: 'Empleado actualizado' });
+    }
+  );
+});
+
+app.put('/usuarios/inactivar/:id', (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    `UPDATE Usuarios SET Estado = 'Inactivo' WHERE ID_Usuario = ?`,
+    [id],
+    (err) => {
+      if (err) {
+        console.error('Error al inactivar empleado:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: 'Empleado inactivado' });
+    }
+  );
+});
+
+
+
+
+
+
+
+
 // Iniciar el servidor en puerto 3000
 const PORT = 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API escuchando en http://10.1.195.38:${PORT}`);
+  console.log(`API escuchando en http://10.1.217.243:${PORT}`);
 });
