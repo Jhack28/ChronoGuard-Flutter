@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // 🚀 Quitar logo DEBUG
+      debugShowCheckedModeBanner: false, 
       title: 'ChronoGuard',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -24,8 +24,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/adminHome': (context) => const AdminHomeScreen(),
         '/secrethome': (context) => const SecretariaHomeScreen(),
-        '/empleadoHome': (context) =>
-            const EmpleadoHomeScreen(), // 👈 aquí va tu pantalla de empleado
+        '/empleadoHome': (context) => const EmpleadoHomeScreen(), // 👈 aquí va tu pantalla de empleado
       },
     );
   }

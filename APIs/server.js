@@ -10,9 +10,9 @@ app.use(bodyParser.json());
 
 // Configuración de conexión a MySQL
 const db = mysql.createConnection({
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',
-  password: 'SENA123',
+  password: '1234',
   database: 'ChronoDB_db',
 });
 
@@ -169,5 +169,5 @@ app.put('/usuarios/inactivar/:id', (req, res) => {
 // Iniciar el servidor en puerto 3000
 const PORT = 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API escuchando en http://10.1.217.243:${PORT}`);
+  console.log(`API escuchando en http://10.1.218.8:${PORT}`);
 });

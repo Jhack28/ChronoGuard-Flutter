@@ -21,10 +21,8 @@ class _HomeState extends State<Home> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color.fromRGBO(106, 174, 230, 1),
-              Color.fromRGBO(20, 66, 104, 1),
-              Color.fromRGBO(20, 66, 104, 1),
-              Color.fromRGBO(134, 195, 245, 1),
+              Colors.teal,
+              Colors.lightBlueAccent,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -249,10 +247,8 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color.fromRGBO(106, 174, 230, 1),
-              Color.fromRGBO(20, 66, 104, 1),
-              Color.fromRGBO(20, 66, 104, 1),
-              Color.fromRGBO(134, 195, 245, 1),
+              Colors.teal,
+              Colors.lightBlueAccent,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
