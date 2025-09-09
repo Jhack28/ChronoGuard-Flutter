@@ -34,7 +34,7 @@ app.post('/login', (req, res) => {
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
   
   db.query(
-    'SELECT ID_Rol FROM Usuarios WHERE Correo = ? AND Contraseña = ?',
+    'SELECT ID_Rol FROM Usuarios WHERE Email = ? AND Password = ?',
     [email, passwordMd5],
     (err, results) => {
       if (err) {
@@ -56,7 +56,7 @@ app.get('/empleado/lista', (req, res) => {
     `SELECT 
       u.ID_Usuario, 
       u.Nombre, 
-      u.Correo, 
+      u.Email, 
       r.tipo AS Rol, 
       d.tipo AS Departamento, 
       u.Numero_de_Documento, 
@@ -82,7 +82,7 @@ app.get('/usuario/lista', (req, res) => {
     `SELECT 
       u.ID_Usuario, 
       u.Nombre, 
-      u.Correo, 
+      u.Email, 
       r.tipo AS Rol, 
       d.tipo AS Departamento, 
       u.Numero_de_Documento, 
@@ -108,7 +108,7 @@ app.post('/admin', (req, res) => {
   const idDepartamento = departamento || null;
 
   db.query(
-    `INSERT INTO Usuarios (Nombre, Correo, Password, ID_Rol, Numero_de_Documento, ID_Departamento, Estado) 
+    `INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, ID_Departamento, Estado) 
      VALUES (?, ?, ?, ?, ?, ?, 'Activo')`,
     [nombre, email, password, idRol, numero_de_documento, idDepartamento],
     (err, result) => {
@@ -130,7 +130,7 @@ app.put('/usuarios/:id', (req, res) => {
 
   db.query(
     `UPDATE Usuarios 
-     SET Nombre = ?, Correo = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+     SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
      WHERE ID_Usuario = ?`,
     [nombre, email, idRol, idDepartamento, numero_de_documento, id],
     (err) => {
@@ -169,5 +169,5 @@ app.put('/usuarios/inactivar/:id', (req, res) => {
 // Iniciar el servidor en puerto 3000
 const PORT = 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API escuchando en http://10.1.217.243:${PORT}`);
+  console.log(`API escuchando en http://10.159.126.7:${PORT}`);
 });

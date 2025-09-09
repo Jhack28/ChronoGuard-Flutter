@@ -47,7 +47,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       orElse: () => Empleado(
         id: idEmpleado,
         nombre: "Desconocido",
-        correo: "",
+        email: "",
         rol: "",
         departamento: "",
         documento: "",
@@ -180,7 +180,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       orElse: () => Empleado(
         id: idEmpleado,
         nombre: "Desconocido",
-        correo: "",
+        email: "",
         rol: "",
         departamento: "",
         documento: "",

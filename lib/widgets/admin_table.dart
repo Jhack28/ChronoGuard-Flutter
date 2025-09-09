@@ -76,7 +76,7 @@ class AdminTable extends StatelessWidget {
               columns: const [
                 DataColumn(label: Text("ID")),
                 DataColumn(label: Text("Nombre")),
-                DataColumn(label: Text("Correo")),
+                DataColumn(label: Text("Email")),
                 DataColumn(label: Text("Departamento")),
                 DataColumn(label: Text("Acciones")),
               ],
@@ -86,7 +86,7 @@ class AdminTable extends StatelessWidget {
                     cells: [
                       DataCell(Text(emp.id.toString())),
                       DataCell(Text(emp.nombre)),
-                      DataCell(Text(emp.correo)),
+                      DataCell(Text(emp.email)),
                       DataCell(
                         Text(
                           (emp.departamento.isEmpty) ? "-" : emp.departamento,

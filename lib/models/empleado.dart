@@ -1,7 +1,7 @@
 class Empleado {
   final int id;
   final String nombre;
-  final String correo;
+  final String email;
   final String rol;
   final String departamento;
   final String documento;
@@ -10,7 +10,7 @@ class Empleado {
   Empleado({
     required this.id,
     required this.nombre,
-    required this.correo,
+    required this.email,
     required this.rol,
     required this.departamento,
     required this.documento,
@@ -21,7 +21,7 @@ class Empleado {
     return Empleado(
       id: json["ID_Usuario"],
       nombre: json["Nombre"],
-      correo: json["Correo"],
+      email: json["Email"],
       rol: json["Rol"], // 👈 este debe venir del JOIN con la tabla Roles
       departamento: json["Departamento"], // 👈 este debe venir del JOIN con la tabla Departamento
       documento: json["Numero_de_Documento"],
@@ -33,7 +33,7 @@ class Empleado {
     return {
       "ID_Usuario": id,
       "Nombre": nombre,
-      "Correo": correo,
+      "Email": email,
       "Rol": rol,
       "Departamento": departamento,
       "Numero_de_Documento": documento,

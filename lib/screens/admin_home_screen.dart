@@ -27,6 +27,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _isEditing = false;
   int? _editingUsuarioId;
 
+  final List<String> roles = ['Administrador', 'Secretaria', 'Empleado'];
+  final List<String> departamentos = ['Lavado', 'Planchado', 'Secado', 'Transporte'];
+
   @override
   void initState() {
     super.initState();
@@ -62,134 +65,202 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Agregar Empleado'),
-        content: _formEmpleado(),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) => AlertDialog(
+            title: const Text('Agregar Empleado'),
+            content: _formEmpleado(dialogSetState),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: _guardarEmpleado,
+                child: const Text('Guardar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: _guardarEmpleado,
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+
 
   void _abrirModalEditar(Usuario usuario) {
     _numeroDocumentoCtrl.text = usuario.documento;
     _nombreCtrl.text = usuario.nombre;
-    _departamentoCtrl.text = usuario.departamento;
-    _emailCtrl.text = usuario.correo;
+    _departamentoCtrl.text = usuario.rol == "Empleado" ? usuario.departamento : '';
+    _emailCtrl.text = usuario.email;
+    _passwordCtrl.clear();
     _rolSeleccionado = usuario.rol;
     _isEditing = true;
     _editingUsuarioId = usuario.id;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Editar Empleado'),
-        content: _formEmpleado(),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) => AlertDialog(
+            title: const Text('Agregar Empleado'),
+            content: _formEmpleado(dialogSetState),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: _guardarEmpleado,
+                child: const Text('Guardar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: _guardarEmpleado,
-            child: const Text('Guardar'),
+        );
+      },
+    );
+  }
+
+Widget _formEmpleado(void Function(void Function()) dialogSetState) {
+  return Form(
+    key: _formKey,
+    child: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: _numeroDocumentoCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Número de Documento',
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) => value == null || value.isEmpty
+                ? 'Ingrese número de documento'
+                : null,
+          ),
+          TextFormField(
+            controller: _nombreCtrl,
+            decoration: const InputDecoration(labelText: 'Nombre'),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Ingrese nombre' : null,
+          ),
+          DropdownButtonFormField<String>(
+            value: _rolSeleccionado,
+            decoration: const InputDecoration(labelText: 'Rol'),
+            items: ['Administrador', 'Secretaria', 'Empleado']
+                .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))
+                .toList(),
+            onChanged: (val) {
+              dialogSetState(() {
+                _rolSeleccionado = val;
+                if (_rolSeleccionado != 'Empleado') {
+                  _departamentoCtrl.clear();
+                }
+              });
+            },
+            validator: (value) => value == null ? 'Seleccione un rol' : null,
+          ),
+          if (_rolSeleccionado == 'Empleado')
+            DropdownButtonFormField<String>(
+              value: _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
+              decoration: const InputDecoration(labelText: 'Departamento'),
+              items: ['Lavado', 'Planchado', 'Secado', 'Transporte']
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                  .toList(),
+              onChanged: (val) {
+                dialogSetState(() {
+                  _departamentoCtrl.text = val ?? '';
+                });
+              },
+              validator: (value) =>
+                  value == null || value.isEmpty
+                      ? 'Seleccione un departamento'
+                      : null,
+            ),
+          TextFormField(
+            controller: _emailCtrl,
+            decoration: const InputDecoration(labelText: 'Correo'),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Ingrese correo' : null,
+          ),
+          TextFormField(
+            controller: _passwordCtrl,
+            decoration: const InputDecoration(labelText: 'Contraseña'),
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+            validator: (value) => _isEditing
+                ? null // al editar, la contraseña puede quedar vacía
+                : (value == null || value.isEmpty
+                    ? 'Ingrese una contraseña'
+                    : null),
           ),
         ],
       ),
-    );
+    ),
+  );
+}
+
+int getRolId(String rol) {
+  switch (rol) {
+    case 'Administrador':
+      return 1;
+    case 'Secretaria':
+      return 2;
+    case 'Empleado':
+      return 3;
+    default:
+      return 3; // Por defecto Empleado
+  }
+}
+
+int? getDepartamentoId(String? departamento) {
+  switch (departamento) {
+    case 'Lavado':
+      return 1;
+    case 'Planchado':
+      return 2;
+    case 'Secado':
+      return 3;
+    case 'Transporte':
+      return 4;
+    default:
+      return null;
+  }
+}
+
+Future<void> _guardarEmpleado() async {
+  if (!(_formKey.currentState?.validate() ?? false)) return;
+
+  final rolId = getRolId(_rolSeleccionado ?? 'Empleado');
+  final departamentoId = _rolSeleccionado == 'Empleado' ? getDepartamentoId(_departamentoCtrl.text) : null;
+
+  final empleadoData = {
+    'numero_de_documento': _numeroDocumentoCtrl.text,
+    'nombre': _nombreCtrl.text,
+    'email': _emailCtrl.text,
+    'password': _passwordCtrl.text,
+    'rol': rolId,
+  };
+
+  if (departamentoId != null) {
+    empleadoData['departamento'] = departamentoId;
   }
 
-  Widget _formEmpleado() {
-    return Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _numeroDocumentoCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Número de Documento',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Ingrese número de documento'
-                  : null,
-            ),
-            TextFormField(
-              controller: _nombreCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Ingrese nombre' : null,
-            ),
-            DropdownButtonFormField<String>(
-              value: _rolSeleccionado,
-              decoration: const InputDecoration(labelText: 'Rol'),
-              items: ['Administrador', 'Secretaria', 'Empleado']
-                  .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))
-                  .toList(),
-              onChanged: (val) => setState(() => _rolSeleccionado = val),
-              validator: (value) => value == null ? 'Seleccione un rol' : null,
-            ),
-            TextFormField(
-              controller: _departamentoCtrl,
-              decoration: const InputDecoration(labelText: 'Departamento'),
-            ),
-            TextFormField(
-              controller: _emailCtrl,
-              decoration: const InputDecoration(labelText: 'Correo'),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Ingrese correo' : null,
-            ),
-            TextFormField(
-              controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
-              keyboardType: TextInputType.visiblePassword,
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Ingrese una contraseña' : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _guardarEmpleado() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    final empleadoData = {
-      'numero_de_documento': _numeroDocumentoCtrl.text,
-      'nombre': _nombreCtrl.text,
-      'departamento': _departamentoCtrl.text,
-      'correo': _emailCtrl.text,
-
-      'rol': _rolSeleccionado ?? 'Empleado',
-    };
-
-    try {
-      if (_isEditing && _editingUsuarioId != null) {
-        await ApiService.actualizarEmpleado(_editingUsuarioId!, empleadoData);
-      } else {
-        empleadoData['password'] = 'default_password'; // Ajusta según necesites
-        await ApiService.crearEmpleado(empleadoData);
-      }
-      Navigator.pop(context);
-      _cargarEmpleados();
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
+  try {
+    if (_isEditing && _editingUsuarioId != null) {
+      await ApiService.actualizarEmpleado(_editingUsuarioId!, empleadoData);
+    } else {
+      await ApiService.crearEmpleado(empleadoData);
     }
+    Navigator.pop(context);
+    _cargarEmpleados();
+  } catch (e) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
   }
+}
+
 
   Future<void> _eliminarEmpleado(int id) async {
     final confirmar = await showDialog<bool>(
@@ -249,9 +320,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               loading: loadingUsuarios,
               onEditar: (emp) => _abrirModalEditar(emp),
               onEliminar: (id) => _eliminarEmpleado(id),
-              onAgregar: _abrirModalAgregar, // <- Aquí conectas tu función
+              onAgregar: _abrirModalAgregar,
             ),
-            // Si quieres agregar AsistenciasTable u otros widgets, los puedes añadir igual
           ],
         ),
       ),

@@ -1,7 +1,7 @@
 class Usuario {
   final int id;
   final String nombre;
-  final String correo;
+  final String email;
   final String rol;
   final String departamento;
   final String documento;
@@ -10,7 +10,7 @@ class Usuario {
   Usuario({
     required this.id,
     required this.nombre,
-    required this.correo,
+    required this.email,
     required this.rol,
     required this.departamento,
     required this.documento,
@@ -21,7 +21,7 @@ class Usuario {
     return Usuario(
       id: json["ID_Usuario"] ?? 0,
       nombre: json["Nombre"] ?? "N/A",
-      correo: json["Correo"] ?? "N/A",
+      email: json["Email"] ?? "N/A",
       rol: json["Rol"] ?? "N/A",
       departamento: json["Departamento"] ?? "N/A",
       documento: json["Numero_de_Documento"] ?? "N/A",
@@ -33,7 +33,7 @@ class Usuario {
     return {
       "ID_Usuario": id,
       "Nombre": nombre,
-      "Correo": correo,
+      "Email": email,
       "Rol": rol,
       "Departamento": departamento,
       "Numero_de_Documento": documento,

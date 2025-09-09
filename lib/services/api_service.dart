@@ -6,7 +6,7 @@ import '../models/usuario.dart';
 
 class ApiService {
   // ⚠️ IMPORTANTE: en dispositivos móviles no uses "localhost", usa tu IP local (ej: 192.168.1.X:5000)
- static const String baseUrl = "http://10.1.217.243:3000"; // <-- cámbialo por tu IP real
+ static const String baseUrl = "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
 
   /// Obtener empleados desde la BD
   static Future<List<Empleado>> fetchEmpleados() async {
