@@ -8,20 +8,46 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Configuración de conexión a MySQL
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'SENA123',
-  database: 'ChronoDB_db',
-});
+// Leer credenciales desde variables de entorno (si no están, usar valores por defecto)
+const DB_HOST = process.env.DB_HOST || '127.0.0.1';
+const DB_USER = process.env.DB_USER || 'chrono';         // <-- usuario recomendado
+const DB_PASS = process.env.DB_PASS || 'StrongPass123';  // <-- cambia si usas otra
+const DB_NAME = process.env.DB_NAME || 'ChronoDB_db';
+const DB_PORTS = process.env.DB_PORTS ? process.env.DB_PORTS.split(',').map(p=>parseInt(p)) : [3306, 3307];
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error de conexión a la base de datos MySQL:', err);
-    process.exit(1);
+let db;
+
+// función que intenta conectar en los puertos indicados
+async function connectDb() {
+  for (const port of DB_PORTS) {
+    try {
+      db = mysql.createConnection({
+        host: DB_HOST,
+        port: port,
+        user: DB_USER,
+        password: DB_PASS,
+        database: DB_NAME,
+      });
+
+      await new Promise((resolve, reject) => {
+        db.connect((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      console.log(`Conectado a la base de datos MySQL en ${DB_HOST}:${port}`);
+      return;
+    } catch (err) {
+      console.error(`No se pudo conectar a MySQL en ${DB_HOST}:${port} -> ${err.code || err.message}`);
+    }
   }
-  console.log('Conectado a la base de datos MySQL');
+  console.error('Fallo al conectar a MySQL en todos los puertos probados. Revisa credenciales/servicio.');
+  process.exit(1);
+}
+
+connectDb().then(() => {
+  console.log('Inicializando tablas y endpoints...');
 
   // Crear tabla Asistencias si no existe
   const createAsistencias = `
@@ -38,6 +64,13 @@ db.connect((err) => {
   db.query(createAsistencias, (err2) => {
     if (err2) console.error('Error creando tabla Asistencias:', err2);
     else console.log('Tabla Asistencias lista');
+  });
+
+  // Iniciar el servidor en puerto 3000
+  const PORT = 3000;
+  const HOST = process.env.API_HOST || '192.168.10.150'; // <- escucha en la IP del PC/lan
+  app.listen(PORT, HOST, () => {
+    console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
 });
 
@@ -289,10 +322,4 @@ app.get('/asistencia/lista', (req, res) => {
       res.json(results);
     }
   );
-});
-
-// Iniciar el servidor en puerto 3000
-const PORT = 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API escuchando en http://10.159.126.7:${PORT}`);
 });

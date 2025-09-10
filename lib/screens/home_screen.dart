@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/api_service.dart'; // <-- agregado
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -20,10 +21,7 @@ class _HomeState extends State<Home> {
         // Fondo gradiente parecido a header en CSS
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.teal,
-              Colors.lightBlueAccent,
-            ],
+            colors: [Colors.teal, Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -68,7 +66,9 @@ class _HomeState extends State<Home> {
                             });
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
                             );
                           },
                         ),
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<String?> loginUser(String correo, String contrasena) async {
     final response = await http.post(
-      Uri.parse('http://127.0.0.1:3000/login'), // Cambia a 10.0.2.2 si usas emulador Android
+      Uri.parse('${ApiService.baseUrl}/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': correo, 'password': contrasena}),
     );
@@ -214,9 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Intentando iniciar sesión...')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Intentando iniciar sesión...')));
 
       String? idRol = await loginUser(correo, contrasena);
 
@@ -246,10 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.teal,
-              Colors.lightBlueAccent,
-            ],
+            colors: [Colors.teal, Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -281,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: "Contraseña",
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {

@@ -5,9 +5,13 @@ import '../models/usuario.dart';
 import 'dart:convert';
 
 class ApiService {
-  // ⚠️ IMPORTANTE: en dispositivos móviles no uses "localhost", usa tu IP local (ej: 192.168.1.X:5000)
-  static const String baseUrl =
-      "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
+  // Permite sobreescribir al compilar:
+  // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.10.150:3000',
+  );
+
   /// Obtener empleados desde la BD
   static Future<List<Empleado>> fetchEmpleados() async {
     final response = await http.get(Uri.parse("$baseUrl/empleado/lista"));
