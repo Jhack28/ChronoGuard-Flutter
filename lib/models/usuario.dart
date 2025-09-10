@@ -2,42 +2,45 @@ class Usuario {
   final int id;
   final String nombre;
   final String email;
-  final String rol;
   final String departamento;
   final String documento;
   final String estado;
+  final bool activo;
+  final String rol; // agregado
 
   Usuario({
     required this.id,
     required this.nombre,
     required this.email,
-    required this.rol,
     required this.departamento,
     required this.documento,
     required this.estado,
+    required this.activo,
+    required this.rol,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
-    return Usuario(
-      id: json["ID_Usuario"] ?? 0,
-      nombre: json["Nombre"] ?? "N/A",
-      email: json["Email"] ?? "N/A",
-      rol: json["Rol"] ?? "N/A",
-      departamento: json["Departamento"] ?? "N/A",
-      documento: json["Numero_de_Documento"] ?? "N/A",
-      estado: json["Estado"] ?? "N/A",
-    );
-  }
+    final rawActivo = json['activo'];
+    bool activoVal = false;
+    if (rawActivo is bool)
+      activoVal = rawActivo;
+    else if (rawActivo is num)
+      activoVal = rawActivo == 1;
+    else if (rawActivo is String)
+      activoVal =
+          rawActivo == '1' ||
+          rawActivo.toLowerCase() == 'true' ||
+          rawActivo.toLowerCase() == 'activo';
 
-  Map<String, dynamic> toJson() {
-    return {
-      "ID_Usuario": id,
-      "Nombre": nombre,
-      "Email": email,
-      "Rol": rol,
-      "Departamento": departamento,
-      "Numero_de_Documento": documento,
-      "Estado": estado,
-    };
+    return Usuario(
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      nombre: json['nombre']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      departamento: json['departamento']?.toString() ?? '',
+      documento: json['documento']?.toString() ?? '',
+      estado: json['estado']?.toString() ?? (activoVal ? 'Activo' : 'Inactivo'),
+      activo: activoVal,
+      rol: json['rol']?.toString() ?? '', // mapeo de rol
+    );
   }
 }

@@ -18,26 +18,39 @@ class Empleado {
   });
 
   factory Empleado.fromJson(Map<String, dynamic> json) {
+    // soporta variantes de nombres de campo (mayúsculas/minúsculas)
+    final idVal = json['id'] ?? json['ID_Usuario'] ?? json['ID'] ?? json['Id'];
+    final nombreVal = json['nombre'] ?? json['Nombre'] ?? '';
+    final emailVal = json['email'] ?? json['Email'] ?? '';
+    final rolVal = json['rol'] ?? json['Rol'] ?? '';
+    final departamentoVal = json['departamento'] ?? json['Departamento'] ?? '';
+    final documentoVal =
+        json['documento'] ??
+        json['Numero_de_Documento'] ??
+        json['numero_de_documento'] ??
+        '';
+    final estadoVal = json['estado'] ?? json['Estado'] ?? '';
+
     return Empleado(
-      id: json["ID_Usuario"],
-      nombre: json["Nombre"],
-      email: json["Email"],
-      rol: json["Rol"], // 👈 este debe venir del JOIN con la tabla Roles
-      departamento: json["Departamento"], // 👈 este debe venir del JOIN con la tabla Departamento
-      documento: json["Numero_de_Documento"],
-      estado: json["Estado"],
+      id: idVal is int ? idVal : int.tryParse(idVal?.toString() ?? '') ?? 0,
+      nombre: nombreVal.toString(),
+      email: emailVal.toString(),
+      rol: rolVal.toString(),
+      departamento: departamentoVal.toString(),
+      documento: documentoVal.toString(),
+      estado: estadoVal.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "ID_Usuario": id,
-      "Nombre": nombre,
-      "Email": email,
-      "Rol": rol,
-      "Departamento": departamento,
-      "Numero_de_Documento": documento,
-      "Estado": estado,
+      'id': id,
+      'nombre': nombre,
+      'email': email,
+      'rol': rol,
+      'departamento': departamento,
+      'documento': documento,
+      'estado': estado,
     };
   }
 }

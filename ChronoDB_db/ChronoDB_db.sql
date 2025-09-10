@@ -19,8 +19,8 @@ CREATE TABLE Usuarios (
   ID_Usuario INT PRIMARY KEY AUTO_INCREMENT,
   Numero_de_Documento VARCHAR (30) NOT NULL,
   Nombre VARCHAR(50) NOT NULL,
-  Correo VARCHAR(100) UNIQUE NOT NULL,
-  Contraseña VARCHAR(255) NOT NULL,
+  Email VARCHAR(100) UNIQUE NOT NULL,
+  Password VARCHAR(255) NOT NULL,
   ID_Rol INT NOT NULL,
   id_departamento INT DEFAULT NULL,
   FOREIGN KEY (ID_Rol) REFERENCES Roles(ID_Rol) ON DELETE CASCADE,
@@ -86,15 +86,29 @@ INSERT INTO Roles (tipo) VALUES ('Admin'), ('Secretaria'), ('Empleado');
 
 INSERT INTO departamento (tipo) VALUES ('Lavado'), ('Planchado'), ('Secado'), ('Transporte');
 
-INSERT INTO Usuarios (Nombre, Correo, Contraseña, ID_Rol, Numero_de_Documento, Estado)
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
 VALUES ('jairo', 'admin@correo.com', MD5('admin123'),1, 12345, 'Activo');
 -- Secretaria
-INSERT INTO Usuarios (Nombre, Correo, Contraseña, ID_Rol, Numero_de_Documento, Estado)
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
 VALUES ('Laura', 'secre@correo.com', MD5('secretaria123'), 2, 51342, 'Activo' );
 
 -- Empleado
-INSERT INTO Usuarios (Nombre, Correo, Contraseña, ID_Rol, id_departamento, Numero_de_Documento, Estado)
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
 VALUES ('mario', 'empleado@correo.com', MD5('empleado123'), 3, 4, 2534, 'Activo');
 
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
+VALUES ('camilo', 'cami@correo.com', MD5('empleado123'), 3, 2, 232534, 'Activo');
+
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
+VALUES ('juan esteban londoño carcajal', 'juanes@correo.com', MD5('admin123'), 1, 222534, 'Activo');
+
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
+VALUES ('angie', 'eangie@correo.com', MD5('secre321'), 2, 2544434, 'inactivo');
+
+INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
+VALUES ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Activo');
+
 select*from usuarios;
+
+
 

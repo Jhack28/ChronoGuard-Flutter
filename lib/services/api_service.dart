@@ -1,13 +1,13 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/empleado.dart';
 import '../models/asistencia.dart';
 import '../models/usuario.dart';
-
+import 'dart:convert';
 
 class ApiService {
   // ⚠️ IMPORTANTE: en dispositivos móviles no uses "localhost", usa tu IP local (ej: 192.168.1.X:5000)
-  static const String baseUrl = "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
+  static const String baseUrl =
+      "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
   /// Obtener empleados desde la BD
   static Future<List<Empleado>> fetchEmpleados() async {
     final response = await http.get(Uri.parse("$baseUrl/empleado/lista"));
@@ -60,38 +60,188 @@ class ApiService {
   }
 
   // PAD DE ADMIN
-  static Future<void> actualizarEmpleado(int id, Map<String, dynamic> data) async {
-  final response = await http.put(
-    Uri.parse('$baseUrl/usuario/$id'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode(data),
-  );
-  if (response.statusCode != 200) {
-    throw Exception("Error al actualizar empleado: ${response.body}");
-  }
+  static Future<void> actualizarEmpleado(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    final candidates = [
+      '/usuario/$id',
+      '/usuarios/$id',
+      '/usuario/actualizar/$id',
+      '/usuario/editar/$id',
+      '/admin/usuario/$id',
+    ];
+
+    http.Response? lastResp;
+    for (final path in candidates) {
+      final url = Uri.parse('$baseUrl$path');
+      for (final tryPatch in [false, true]) {
+        try {
+          final resp = tryPatch
+              ? await http.patch(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(data),
+                )
+              : await http.put(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(data),
+                );
+
+          // Logging para depurar desde la app
+          // ignore: avoid_print
+          print(
+            '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
+          );
+
+          if (resp.statusCode == 200 ||
+              resp.statusCode == 201 ||
+              resp.statusCode == 204) {
+            return; // éxito
+          }
+
+          lastResp = resp;
+
+          // si la respuesta indica ruta inexistente, probamos siguiente candidate
+          final bodyLower = resp.body.toLowerCase();
+          if (resp.statusCode == 404 ||
+              bodyLower.contains('cannot put') ||
+              bodyLower.contains('<!doctype')) {
+            continue;
+          }
+
+          // para otros códigos (400, 422, 500) devolvemos el error directamente
+          throw Exception(
+            "Error al actualizar empleado: ${resp.statusCode} ${resp.body}",
+          );
+        } catch (e) {
+          // continúa con la siguiente ruta/método
+          // ignore: avoid_print
+          print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
+        }
+      }
+    }
+
+    throw Exception(
+      'No se pudo actualizar empleado. Última respuesta: ${lastResp?.statusCode ?? 'sin respuesta'} ${lastResp?.body ?? ''}',
+    );
   }
 
   static Future<void> crearEmpleado(Map<String, dynamic> empleadoData) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/admin'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode(empleadoData),
-  );
-  if (response.statusCode != 200 && response.statusCode != 201) {
-    throw Exception("Error al crear empleado: ${response.body}");
+    final response = await http.post(
+      Uri.parse('$baseUrl/admin'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(empleadoData),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception("Error al crear empleado: ${response.body}");
+    }
   }
-}
 
   static Future<void> inactivarEmpleado(int id) async {
-  final response = await http.put(
-    Uri.parse('$baseUrl/usuario/inactivar/$id'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'id': id}), // opcional, según backend
-  );
-  if (response.statusCode != 200) {
-    throw Exception('Error al inactivar empleado: ${response.body}');
+    final candidates = ['/usuario/inactivar/$id', '/usuarios/inactivar/$id'];
+
+    http.Response? lastResp;
+    for (final path in candidates) {
+      final url = Uri.parse('$baseUrl$path');
+      for (final tryPatch in [false, true]) {
+        try {
+          final resp = tryPatch
+              ? await http.patch(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'id': id}),
+                )
+              : await http.put(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'id': id}),
+                );
+
+          // ignore: avoid_print
+          print(
+            '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
+          );
+
+          if (resp.statusCode == 200 || resp.statusCode == 204) {
+            return;
+          }
+
+          lastResp = resp;
+
+          final bodyLower = resp.body.toLowerCase();
+          if (resp.statusCode == 404 ||
+              bodyLower.contains('<!doctype') ||
+              bodyLower.contains('cannot')) {
+            continue;
+          }
+
+          throw Exception(
+            'Error al inactivar empleado: ${resp.statusCode} ${resp.body}',
+          );
+        } catch (e) {
+          // ignore: avoid_print
+          print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
+        }
+      }
+    }
+
+    throw Exception(
+      'No se pudo inactivar empleado. Última respuesta: ${lastResp?.statusCode ?? 'sin respuesta'} ${lastResp?.body ?? ''}',
+    );
   }
-}
+
+  // Nuevo: eliminar definitivamente
+  static Future<void> eliminarEmpleado(int id) async {
+    final candidates = [
+      '/usuario/$id',
+      '/usuarios/$id',
+      '/usuario/eliminar/$id',
+      '/usuario/borrar/$id',
+      '/admin/usuario/$id',
+    ];
+
+    http.Response? lastResp;
+    for (final path in candidates) {
+      final url = Uri.parse('$baseUrl$path');
+      try {
+        final resp = await http.delete(
+          url,
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        // ignore: avoid_print
+        print('DELETE $url -> ${resp.statusCode}\n${resp.body}');
+
+        if (resp.statusCode == 200 ||
+            resp.statusCode == 204 ||
+            resp.statusCode == 201) {
+          return;
+        }
+
+        lastResp = resp;
+
+        final bodyLower = resp.body.toLowerCase();
+        if (resp.statusCode == 404 ||
+            bodyLower.contains('<!doctype') ||
+            bodyLower.contains('cannot')) {
+          continue;
+        }
+
+        throw Exception(
+          'Error al eliminar empleado: ${resp.statusCode} ${resp.body}',
+        );
+      } catch (e) {
+        // ignore: avoid_print
+        print('Intento fallido $path (DELETE): $e');
+      }
+    }
+
+    throw Exception(
+      'No se pudo eliminar empleado. Última respuesta: ${lastResp?.statusCode ?? 'sin respuesta'} ${lastResp?.body ?? ''}',
+    );
+  }
 
   static Future<List<Usuario>> fetchUsuarios() async {
     final response = await http.get(Uri.parse("$baseUrl/usuario/lista"));
@@ -103,7 +253,6 @@ class ApiService {
       throw Exception("Error al obtener empleados: ${response.body}");
     }
   }
-
 
   // Obtener notificaciones del empleado
   static Future<List<dynamic>> fetchNotificaciones(int idUsuario) async {
@@ -128,13 +277,16 @@ class ApiService {
   }
 
   // Crear notificación para empleado
-  static Future<void> crearNotificacionEmpleado(Map<String, dynamic> data) async {
+  static Future<void> crearNotificacionEmpleado(
+    Map<String, dynamic> data,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/notificaciones'),
       body: jsonEncode(data),
       headers: {'Content-Type': 'application/json'},
     );
-    if (res.statusCode != 200 && res.statusCode != 201) throw Exception('Error al crear notificación');
+    if (res.statusCode != 200 && res.statusCode != 201)
+      throw Exception('Error al crear notificación');
   }
 
   // Crear notificación para admin
@@ -144,7 +296,68 @@ class ApiService {
       body: jsonEncode(data),
       headers: {'Content-Type': 'application/json'},
     );
-    if (res.statusCode != 200 && res.statusCode != 201) throw Exception('Error al crear notificación admin');
+    if (res.statusCode != 200 && res.statusCode != 201)
+      throw Exception('Error al crear notificación admin');
+  }
+
+  static Future<void> activarEmpleado(int id) async {
+    final candidates = [
+      '/usuario/activar/$id',
+      '/usuarios/activar/$id',
+      '/usuario/$id/activar',
+      '/admin/usuario/activar/$id',
+      '/usuario/$id',
+    ];
+
+    http.Response? lastResp;
+    for (final path in candidates) {
+      final url = Uri.parse('$baseUrl$path');
+      for (final tryPatch in [false, true]) {
+        try {
+          final resp = tryPatch
+              ? await http.patch(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'id': id}),
+                )
+              : await http.put(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'id': id}),
+                );
+
+          // ignore: avoid_print
+          print(
+            '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
+          );
+
+          if (resp.statusCode == 200 ||
+              resp.statusCode == 201 ||
+              resp.statusCode == 204) {
+            return;
+          }
+
+          lastResp = resp;
+
+          final bodyLower = resp.body.toLowerCase();
+          if (resp.statusCode == 404 ||
+              bodyLower.contains('<!doctype') ||
+              bodyLower.contains('cannot')) {
+            continue;
+          }
+
+          throw Exception(
+            'Error al activar empleado: ${resp.statusCode} ${resp.body}',
+          );
+        } catch (e) {
+          // ignore: avoid_print
+          print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
+        }
+      }
+    }
+
+    throw Exception(
+      'No se pudo activar empleado. Última respuesta: ${lastResp?.statusCode ?? 'sin respuesta'} ${lastResp?.body ?? ''}',
+    );
   }
 }
-
