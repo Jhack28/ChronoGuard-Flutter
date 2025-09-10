@@ -4,10 +4,10 @@ import '../models/empleado.dart';
 import '../models/asistencia.dart';
 import '../models/usuario.dart';
 
+
 class ApiService {
   // ⚠️ IMPORTANTE: en dispositivos móviles no uses "localhost", usa tu IP local (ej: 192.168.1.X:5000)
- static const String baseUrl = "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
-
+  static const String baseUrl = "http://10.159.126.7:3000"; // <-- cámbialo por tu IP real
   /// Obtener empleados desde la BD
   static Future<List<Empleado>> fetchEmpleados() async {
     final response = await http.get(Uri.parse("$baseUrl/empleado/lista"));
@@ -103,4 +103,48 @@ class ApiService {
       throw Exception("Error al obtener empleados: ${response.body}");
     }
   }
+
+
+  // Obtener notificaciones del empleado
+  static Future<List<dynamic>> fetchNotificaciones(int idUsuario) async {
+    final res = await http.get(Uri.parse('$baseUrl/notificaciones/$idUsuario'));
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    throw Exception('Error al cargar notificaciones');
+  }
+
+  // Crear permiso
+  static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/permisos'),
+      body: jsonEncode(permisoData),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return jsonDecode(res.body)['ID_tipoPermiso'];
+    }
+    throw Exception('Error al crear permiso');
+  }
+
+  // Crear notificación para empleado
+  static Future<void> crearNotificacionEmpleado(Map<String, dynamic> data) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/notificaciones'),
+      body: jsonEncode(data),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) throw Exception('Error al crear notificación');
+  }
+
+  // Crear notificación para admin
+  static Future<void> crearNotificacionAdmin(Map<String, dynamic> data) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/notificaciones_admin'),
+      body: jsonEncode(data),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) throw Exception('Error al crear notificación admin');
+  }
 }
+
