@@ -39,7 +39,7 @@ app.use(bodyParser.json());
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'chrono';         // <-- usuario recomendado
 const DB_PASS = process.env.DB_PASS || 'StrongPass123';  // <-- cambia si usas otra
-const DB_NAME = process.env.DB_NAME || 'ChronoDB_db';
+const DB_NAME = process.env.DB_NAME || 'chronoDB_db';
 const DB_PORTS = process.env.DB_PORTS ? process.env.DB_PORTS.split(',').map(p=>parseInt(p)) : [3306, 3307];
 
 let db;
@@ -48,6 +48,7 @@ let db;
 async function connectDb() {
   for (const port of DB_PORTS) {
     try {
+      console.log("Conectando a la base:", DB_NAME);
       db = mysql.createConnection({
         host: DB_HOST,
         port: port,
@@ -77,22 +78,7 @@ async function connectDb() {
 connectDb().then(() => {
   console.log('Inicializando tablas y endpoints...');
 
-  // Crear tabla Asistencias si no existe
-  const createAsistencias = `
-    CREATE TABLE IF NOT EXISTS Asistencias (
-      ID_Asistencia INT AUTO_INCREMENT PRIMARY KEY,
-      ID_Usuario INT NOT NULL,
-      Nombre VARCHAR(150),
-      Entrada DATETIME NULL,
-      Salida DATETIME NULL,
-      Estado VARCHAR(50),
-      FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
-    ) ENGINE=InnoDB;
-  `;
-  db.query(createAsistencias, (err2) => {
-    if (err2) console.error('Error creando tabla Asistencias:', err2);
-    else console.log('Tabla Asistencias lista');
-  });
+  
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
@@ -552,24 +538,24 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
  *       201:
  *         description: Asistencia registrada
  */
-app.post('/asistencia/registrar', (req, res) => {
-  const { id, nombre, entrada, salida, estado } = req.body;
-  // entrada/salida deberían venir en ISO; si vienen vacías se insertan NULL
-  const entradaVal = entrada ? new Date(entrada) : null;
-  const salidaVal = salida ? new Date(salida) : null;
-
-  db.query(
-    `INSERT INTO Asistencias (ID_Usuario, Nombre, Entrada, Salida, Estado) VALUES (?, ?, ?, ?, ?)`,
-    [id, nombre || null, entradaVal, salidaVal, estado || null],
-    (err, result) => {
-      if (err) {
-        console.error('Error al insertar asistencia:', err);
-        return res.status(500).json({ error: err.message });
-      }
-      res.status(201).json({ message: 'Asistencia registrada', id: result.insertId });
+// Registrar asistencia
+app.post("/asistencia/registrar", (req, res) => {
+  const { ID_Usuario, Fecha, HoraEntrada, HoraSalida } = req.body;
+  const sql = `
+    INSERT INTO asistencias (ID_Usuario, Fecha, HoraEntrada, HoraSalida)
+    VALUES (?, ?, ?, ?)
+  `;
+  
+  db.query(sql, [ID_Usuario, Fecha, HoraEntrada, HoraSalida], (err, result) => {
+    if (err) {
+      console.error("Error en SQL:", err);
+      return res.status(500).json({ error: "Error al registrar asistencia" });
     }
-  );
+    res.status(200).json({ success: true, insertId: result.insertId });
+  });
 });
+
+
 
 // Listar asistencias
 /**
@@ -586,11 +572,11 @@ app.get('/asistencia/lista', (req, res) => {
     `SELECT 
        a.ID_Asistencia AS id,
        a.ID_Usuario AS idUsuario,
-       COALESCE(u.Nombre, a.Nombre) AS nombre,
-       DATE_FORMAT(a.Entrada, '%Y-%m-%dT%H:%i:%s') AS entrada,
-       DATE_FORMAT(a.Salida, '%Y-%m-%dT%H:%i:%s') AS salida,
-       a.Estado AS estado
-     FROM Asistencias a
+       u.Nombre AS nombre,
+       a.Fecha AS fecha,
+       a.HoraEntrada AS horaEntrada,
+       a.HoraSalida AS horaSalida
+     FROM asistencias a
      LEFT JOIN Usuarios u ON u.ID_Usuario = a.ID_Usuario
      ORDER BY a.ID_Asistencia DESC`,
     (err, results) => {
@@ -598,7 +584,6 @@ app.get('/asistencia/lista', (req, res) => {
         console.error('Error al obtener asistencias:', err);
         return res.status(500).json({ error: err.message });
       }
-      console.log('GET /asistencia/lista ->', results.length, 'registros');
       res.json(results);
     }
   );

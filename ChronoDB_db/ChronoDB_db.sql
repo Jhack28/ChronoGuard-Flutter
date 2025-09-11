@@ -65,7 +65,7 @@ CREATE TABLE Notificaciones_ADMIN (
   ID_tipoPermiso INT NOT NULL,
   tipo ENUM(
     'calamidad domestica', 'Cita Medica','Permiso Personal', 'Permiso por citacion legal o judicial', 'eventos familiares') NOT NULL,
-  Correo VARCHAR(100) NOT NULL,
+  Email VARCHAR(100) NOT NULL,
   FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE,
   FOREIGN KEY (ID_tipoPermiso) REFERENCES TipoPermiso(ID_tipoPermiso) ON DELETE CASCADE
 );

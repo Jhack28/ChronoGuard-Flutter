@@ -26,11 +26,11 @@ class ApiService {
 
   /// Registrar asistencia
   static Future<bool> registrarAsistencia(Asistencia asistencia) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/asistencia/registrar"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(asistencia.toJson()),
-    );
+  final response = await http.post(
+    Uri.parse("$baseUrl/asistencia/registrar"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode(asistencia.toJson()),
+  );
 
     if (response.statusCode == 200) {
       return true;
