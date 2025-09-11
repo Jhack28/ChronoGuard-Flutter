@@ -4,7 +4,34 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const crypto = require('crypto');
 
+// Primero declara express app
 const app = express();
+
+// --- INICIO: Swagger ---
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Chronoguard API',
+      version: '1.0.0',
+      description: 'Documentación automática de la API Chronoguard',
+    },
+    servers: [
+      { url: 'http://10.1.217.105:3000' }, // Ajusta según IP y puerto reales
+    ],
+  },
+  apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Usa swagger UI como middleware para /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// --- FIN: Swagger ---
+
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -46,6 +73,7 @@ async function connectDb() {
   process.exit(1);
 }
 
+
 connectDb().then(() => {
   console.log('Inicializando tablas y endpoints...');
 
@@ -68,13 +96,44 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '192.168.10.150'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '10.1.217.105'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
 });
 
 // Endpoint de login
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Login de usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso o fallido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 ID_Rol:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ */
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -101,6 +160,15 @@ app.post('/login', (req, res) => {
 });
 
 // LISTA usuarios (admin)
+/**
+ * @swagger
+ * /usuario/lista:
+ *   get:
+ *     summary: Obtiene la lista de todos los usuarios
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ */
 app.get('/usuario/lista', (req, res) => {
   db.query(
     `SELECT 
@@ -127,6 +195,15 @@ app.get('/usuario/lista', (req, res) => {
 });
 
 // LISTA empleados (solo rol empleado) (mismo cambio)
+/**
+ * @swagger
+ * /empleado/lista:
+ *   get:
+ *     summary: Obtiene la lista de empleados (rol empleado)
+ *     responses:
+ *       200:
+ *         description: Lista de empleados
+ */
 app.get('/empleado/lista', (req, res) => {
   db.query(
     `SELECT 
@@ -154,6 +231,34 @@ app.get('/empleado/lista', (req, res) => {
 });
 
 // Crear empleado (hashea password con MD5)
+/**
+ * @swagger
+ * /admin:
+ *   post:
+ *     summary: Crear un nuevo empleado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               rol:
+ *                 type: integer
+ *               numero_de_documento:
+ *                 type: string
+ *               departamento:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Empleado creado
+ */
 app.post('/admin', (req, res) => {
   const { nombre, email, password, rol, numero_de_documento, departamento } = req.body;
 
@@ -180,6 +285,39 @@ app.post('/admin', (req, res) => {
 });
 
 // Actualizar empleado (ruta plural)
+/**
+ * @swagger
+ * /usuarios/{id}:
+ *   put:
+ *     summary: Actualiza los datos de un empleado
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del usuario a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               rol:
+ *                 type: integer
+ *               departamento:
+ *                 type: integer
+ *               numero_de_documento:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Empleado actualizado
+ */
 app.put('/usuarios/:id', (req, res) => {
   const { id } = req.params;
   const { nombre, email, rol, departamento, numero_de_documento } = req.body;
@@ -202,7 +340,41 @@ app.put('/usuarios/:id', (req, res) => {
   );
 });
 
-// Alias: actualizar empleado (ruta singular) -> reutiliza la misma lógica (sin reescribir req.url)
+/**
+ * @swagger
+ * /usuario/{id}:
+ *   put:
+ *     summary: Actualiza los datos de un empleado (alias singular)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del usuario a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               rol:
+ *                 type: integer
+ *               departamento:
+ *                 type: integer
+ *               numero_de_documento:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Empleado actualizado
+ *       500:
+ *         description: Error interno
+ */
 app.put('/usuario/:id', (req, res) => {
   const { id } = req.params;
   const { nombre, email, rol, departamento, numero_de_documento } = req.body;
@@ -210,8 +382,8 @@ app.put('/usuario/:id', (req, res) => {
   const idDepartamento = departamento || null;
   db.query(
     `UPDATE Usuarios 
-     SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
-     WHERE ID_Usuario = ?`,
+      SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+      WHERE ID_Usuario = ?`,
     [nombre, email, idRol, idDepartamento, numero_de_documento, id],
     (err) => {
       if (err) {
@@ -223,7 +395,24 @@ app.put('/usuario/:id', (req, res) => {
   );
 });
 
-// Inactivar (plural)
+/**
+ * @swagger
+ * /usuarios/inactivar/{id}:
+ *   put:
+ *     summary: Inactiva un empleado (plural)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario a inactivar
+ *     responses:
+ *       200:
+ *         description: Empleado inactivado
+ *       500:
+ *         description: Error interno
+ */
 app.put('/usuarios/inactivar/:id', (req, res) => {
   const { id } = req.params;
 
@@ -240,7 +429,24 @@ app.put('/usuarios/inactivar/:id', (req, res) => {
   );
 });
 
-// Inactivar alias (singular)
+/**
+ * @swagger
+ * /usuario/inactivar/{id}:
+ *   put:
+ *     summary: Inactiva un empleado (alias singular)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario a inactivar
+ *     responses:
+ *       200:
+ *         description: Empleado inactivado
+ *       500:
+ *         description: Error interno
+ */
 app.put('/usuario/inactivar/:id', (req, res) => {
   const { id } = req.params;
   db.query(`UPDATE Usuarios SET Estado = 'Inactivo' WHERE ID_Usuario = ?`, [id], (err) => {
@@ -252,7 +458,24 @@ app.put('/usuario/inactivar/:id', (req, res) => {
   });
 });
 
-// Activar (varias rutas que ApiService intenta)
+/**
+ * @swagger
+ * /usuarios/activar/{id}:
+ *   put:
+ *     summary: Activa un empleado (varias rutas manejadas)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario a activar
+ *     responses:
+ *       200:
+ *         description: Empleado activado
+ *       500:
+ *         description: Error interno
+ */
 app.put(['/usuarios/activar/:id', '/usuario/activar/:id', '/usuario/:id/activar'], (req, res) => {
   const id = req.params.id;
   db.query(`UPDATE Usuarios SET Estado = 'Activo' WHERE ID_Usuario = ?`, [id], (err) => {
@@ -264,7 +487,26 @@ app.put(['/usuarios/activar/:id', '/usuario/activar/:id', '/usuario/:id/activar'
   });
 });
 
-// Eliminar (DELETE) - implementa las rutas que ApiService prueba
+/**
+ * @swagger
+ * /usuarios/{id}:
+ *   delete:
+ *     summary: Elimina un empleado (varias rutas manejadas)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario a eliminar
+ *     responses:
+ *       200:
+ *         description: Empleado eliminado
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error interno
+ */
 app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/borrar/:id', '/admin/usuario/:id'], (req, res) => {
   const id = req.params.id;
   db.query(`DELETE FROM Usuarios WHERE ID_Usuario = ?`, [id], (err, result) => {
@@ -279,8 +521,37 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
   });
 });
 
+
 // --- NUEVOS ENDPOINTS para asistencias ---
 // Registrar asistencia
+/**
+ * @swagger
+ * /asistencia/registrar:
+ *   post:
+ *     summary: Registrar asistencia
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *               nombre:
+ *                 type: string
+ *               entrada:
+ *                 type: string
+ *                 format: date-time
+ *               salida:
+ *                 type: string
+ *                 format: date-time
+ *               estado:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Asistencia registrada
+ */
 app.post('/asistencia/registrar', (req, res) => {
   const { id, nombre, entrada, salida, estado } = req.body;
   // entrada/salida deberían venir en ISO; si vienen vacías se insertan NULL
@@ -301,6 +572,15 @@ app.post('/asistencia/registrar', (req, res) => {
 });
 
 // Listar asistencias
+/**
+ * @swagger
+ * /asistencia/lista:
+ *   get:
+ *     summary: Lista de asistencias registradas
+ *     responses:
+ *       200:
+ *         description: Lista de asistencias
+ */
 app.get('/asistencia/lista', (req, res) => {
   db.query(
     `SELECT 
