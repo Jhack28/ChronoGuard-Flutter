@@ -21,7 +21,7 @@ class _HomeState extends State<Home> {
         // Fondo gradiente parecido a header en CSS
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.teal, Colors.lightBlueAccent],
+            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -56,8 +56,8 @@ class _HomeState extends State<Home> {
                         ),
                         IconButton(
                           icon: Icon(
-                            Icons.login,
-                            color: Colors.white,
+                            Icons.manage_accounts,
+                            color: const Color.fromARGB(255, 0, 0, 0),
                             size: 30,
                           ),
                           onPressed: () {
@@ -241,12 +241,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Iniciar Sesión")),
+      appBar: AppBar(
+        title: Text("Iniciar Sesión"),
+        backgroundColor: const Color.fromARGB(255, 0, 116, 104),
+      ),
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.teal, Colors.lightBlueAccent],
+            colors: [const Color.fromARGB(255, 0, 116, 104), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

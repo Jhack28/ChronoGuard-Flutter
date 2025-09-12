@@ -15,6 +15,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   List<Usuario> usuarios = [];
   bool loadingUsuarios = true;
   List<Asistencia> asistencias = [];
+  bool loadingAsistencias = true;
+  List<String> tiposNotificaciones = [];
+  bool loadingNotificaciones = true;
 
   // Por defecto mostramos solo activos en el panel; el switch mostrará los inactivos
   bool _showOnlyInactivos = false;
@@ -59,6 +62,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ).showSnackBar(SnackBar(content: Text("Error al cargar empleados: $e")));
     }
   }
+  
 
   void _abrirModalAgregar() {
     _formKey.currentState?.reset();
@@ -195,7 +199,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             TextFormField(
               controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
+              decoration: const InputDecoration(labelText: 'Contraseña temporal'),
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
               validator: (value) => _isEditing
@@ -402,7 +406,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
-        backgroundColor: const Color.fromARGB(197, 3, 19, 110),
+        backgroundColor: const Color.fromRGBO(0, 150, 136, 1),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -417,6 +421,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ],
       ),
       body: SingleChildScrollView(
+      child: Container(
+      decoration: const BoxDecoration(      
+      gradient: LinearGradient(
+      colors: [Colors.teal, Colors.lightBlueAccent],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+        ),
+      ),
         child: Column(
           children: [
             Padding(
@@ -447,8 +459,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ],
         ),
       ),
+      ),
       bottomNavigationBar: BottomAppBar(
-        child: Padding(
+          color: Colors.teal,
+          child: Padding(
           padding: const EdgeInsets.all(8),
           child: const Text(
             '© 2024 ChronoGuard. Todos los derechos reservados.',

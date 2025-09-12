@@ -240,7 +240,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Secretaria'),
-        backgroundColor: const Color.fromARGB(197, 3, 19, 110),
+        backgroundColor: const Color.fromRGBO(0, 150, 136, 1),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -255,6 +255,14 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
         ],
       ),
       body: SingleChildScrollView(
+      child: Container(
+      decoration: const BoxDecoration(      
+      gradient: LinearGradient(
+      colors: [Colors.teal, Colors.lightBlueAccent],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+        ),
+      ),
         child: Column(
           children: [
             EmpleadosTable(
@@ -297,7 +305,9 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
           ],
         ),
       ),
+      ),
       bottomNavigationBar: BottomAppBar(
+        color: Colors.teal,
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: const Text(

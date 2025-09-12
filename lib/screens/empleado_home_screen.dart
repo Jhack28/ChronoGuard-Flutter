@@ -20,7 +20,7 @@ class EmpleadoHomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: Colors.teal,
+  backgroundColor: const Color.fromRGBO(0, 150, 136, 1),
   elevation: 8,
   centerTitle: true,
   leading: Row(
@@ -43,15 +43,15 @@ class EmpleadoHomeScreen extends StatelessWidget {
 
       // BODY
       body: Container(
-  decoration: const BoxDecoration(
-    gradient: LinearGradient(
+      decoration: const BoxDecoration(      
+      gradient: LinearGradient(
       colors: [Colors.teal, Colors.lightBlueAccent],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-    ),
-  ),
-  child: Column(
-    children: [
+        ),
+      ),
+        child: Column(
+        children: [
       // frase motivacional
       Container(
         margin: const EdgeInsets.all(16),

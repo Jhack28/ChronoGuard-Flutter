@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/empleado.dart';
 import '../models/asistencia.dart';
@@ -52,6 +53,10 @@ class ApiService {
     }
   }
 
+  /// Obtener tipos de notificaciones
+
+
+
   /// Generar reporte
   static Future<Map<String, dynamic>> generarReporte() async {
     final response = await http.get(Uri.parse("$baseUrl/reporte"));
@@ -62,6 +67,7 @@ class ApiService {
       throw Exception("Error al generar reporte: ${response.body}");
     }
   }
+
 
   // PAD DE ADMIN
   static Future<void> actualizarEmpleado(
