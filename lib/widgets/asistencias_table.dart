@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/asistencia.dart';
 
 class AsistenciasTable extends StatelessWidget {
-  final List<Asistencia> asistencias;
+  final List<Asistencia> Asistencias;
   final VoidCallback onRegistrar;
 
   const AsistenciasTable({
-    required this.asistencias,
+    required this.Asistencias,
     required this.onRegistrar,
     super.key,
   });
@@ -37,24 +37,24 @@ class AsistenciasTable extends StatelessWidget {
             ),
           ),
           SingleChildScrollView(
-            scrollDirection: Axis.horizontal, // 👉 evita overflow si hay muchas columnas
+            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: const [
                 DataColumn(label: Text('ID')),
                 DataColumn(label: Text('Nombre')),
-                DataColumn(label: Text('Entrada')),
-                DataColumn(label: Text('Salida')),
-                DataColumn(label: Text('Estado')),
+                DataColumn(label: Text('Fecha')),
+                DataColumn(label: Text('Hora Entrada')),
+                DataColumn(label: Text('Hora Salida')),
               ],
-              rows: asistencias
+              rows: Asistencias
                   .map(
                     (a) => DataRow(
                       cells: [
-                        DataCell(Text(a.id.toString())), // 🔹 forzamos a String
-                        DataCell(Text(a.nombre ?? '')), // 🔹 manejamos nulls
-                        DataCell(Text(a.entrada?.toString() ?? '')),
-                        DataCell(Text(a.salida?.toString() ?? '')),
-                        DataCell(Text(a.estado ?? '')),
+                        DataCell(Text(a.idUsuario.toString())),
+                        DataCell(Text(a.nombre ?? '')),
+                        DataCell(Text(a.fecha?.toString() ?? '')),
+                        DataCell(Text(a.horaEntrada?.toString() ?? '')),
+                        DataCell(Text(a.horaSalida?.toString() ?? '')),
                       ],
                     ),
                   )

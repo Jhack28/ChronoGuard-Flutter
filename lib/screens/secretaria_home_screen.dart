@@ -41,7 +41,10 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
 
   // Mostrar diálogo para registrar asistencia de un empleado específico
   void mostrarDialogoAsistencia(int idEmpleado) {
-    String entrada = '', salida = '', estado = 'Puntual';
+    String fechaInput = ''; // formato YYYY-MM-DD opcional
+    String horaEntrada = ''; // formato HH:mm[:ss]
+    String horaSalida = '';
+
     final empleado = empleados.firstWhere(
       (e) => e.id == idEmpleado,
       orElse: () => Empleado(
@@ -64,21 +67,26 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Fecha (opcional). Si queda vacío se usará hoy.
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Entrada (HH:mm o ISO)'),
-                  onChanged: (v) => entrada = v,
+                  decoration: const InputDecoration(
+                    labelText: 'Fecha (YYYY-MM-DD) - opcional',
+                  ),
+                  onChanged: (v) => fechaInput = v.trim(),
                 ),
+                // Hora entrada
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Salida (HH:mm o ISO)'),
-                  onChanged: (v) => salida = v,
+                  decoration: const InputDecoration(
+                    labelText: 'Hora Entrada (HH:mm o HH:mm:ss)',
+                  ),
+                  onChanged: (v) => horaEntrada = v.trim(),
                 ),
-                DropdownButtonFormField<String>(
-                  initialValue: estado,
-                  decoration: const InputDecoration(labelText: 'Estado'),
-                  items: ['Puntual', 'Tarde', 'Ausente']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) => estado = v ?? 'Puntual',
+                // Hora salida
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Hora Salida (HH:mm o HH:mm:ss)',
+                  ),
+                  onChanged: (v) => horaSalida = v.trim(),
                 ),
               ],
             ),
@@ -91,22 +99,29 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
             ElevatedButton(
               child: const Text('Registrar'),
               onPressed: () async {
-                // crear objeto Asistencia (modelo actual con campos String)
+                // Fecha a usar
+                DateTime fecha;
+                if (fechaInput.isNotEmpty) {
+                  final parsed = DateTime.tryParse(fechaInput);
+                  fecha = parsed ?? DateTime.now();
+                } else {
+                  fecha = DateTime.now();
+                }
+
+                // Crear Asistencia con el modelo que usamos: id, nombre, fecha, horaEntrada, horaSalida
                 final nueva = Asistencia(
-                  id: idEmpleado,
+                  idUsuario: idEmpleado, 
                   nombre: empleado.nombre,
-                  entrada: entrada.isEmpty ? DateTime.now() : DateTime.tryParse(entrada),
-                  salida: salida.isEmpty ? null : DateTime.tryParse(salida),
-                  estado: estado,
+                  fecha: fecha,
+                  horaEntrada: horaEntrada.isEmpty ? null : horaEntrada,
+                  horaSalida: horaSalida.isEmpty ? null : horaSalida,
                 );
 
-                // Intentar guardar en backend (si ApiService.registrarAsistencia está implementado)
                 bool ok = false;
                 try {
                   ok = await ApiService.registrarAsistencia(nueva);
                 } catch (e) {
                   ok = false;
-                  // seguir: mostrar error
                 }
 
                 if (ok) {
@@ -115,10 +130,10 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                     const SnackBar(content: Text('Asistencia registrada correctamente')),
                   );
                 } else {
-                  // aunque fallen, agregamos localmente para pruebas (opcional)
+                  // Para pruebas locales, igualmente la agregamos a la lista visible
                   setState(() => asistencias.add(nueva));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Asistencia registrada (local). Error al guardar en servidor)')),
+                    const SnackBar(content: Text('Asistencia registrada localmente. Error al guardar en servidor')),
                   );
                 }
 
@@ -215,8 +230,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   return;
                 }
 
-                // Aquí puedes llamar a tu servicio que envía reportes/notificaciones al backend.
-                // Ejemplo (si implementas ApiService.enviarReporte):
+                // Llamar al servicio que envía reportes/notificaciones al backend (si existe)
                 // await ApiService.enviarReporte(idEmpleado, motivo);
 
                 controller.dispose();
@@ -232,8 +246,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       },
     );
   }
-  
-
 
   @override
   Widget build(BuildContext context) {
@@ -269,16 +281,12 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
               empleados: empleados,
               loading: loadingEmpleados,
               onRegistrarAsistencia: (idEmpleado) {
-                // al pulsar registrar desde la fila: abrir diálogo de registro para ese empleado
                 mostrarDialogoAsistencia(idEmpleado);
               },
               onEnviarReporte: (idEmpleado, motivo) {
-                // si se llama con motivo desde la fila, abrir diálogo con el motivo opcionalmente
                 if (motivo.trim().isEmpty) {
                   mostrarDialogoReporteParaEmpleado(idEmpleado);
                 } else {
-                  // si ya viene motivo, podrías enviar directamente al backend
-                  // ApiService.enviarReporte(idEmpleado, motivo);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Reporte para empleado $idEmpleado: $motivo')),
                   );
@@ -286,9 +294,8 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
               },
             ),
 
-            // Botón general para registrar asistencia manualmente (seleccionar empleado primero)
             AsistenciasTable(
-              asistencias: asistencias,
+              Asistencias: asistencias,
               onRegistrar: _mostrarSeleccionEmpleadoParaAsistencia,
             ),
 
@@ -296,7 +303,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
                 onPressed: () {
-                  // botón para generar reporte global o abrir diálogo para seleccionar empleado
                   _mostrarSeleccionEmpleadoParaReporte();
                 },
                 child: const Text('Generar Reporte'),
