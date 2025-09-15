@@ -4,13 +4,14 @@ import '../models/empleado.dart'; // Importa tu modelo
 class EmpleadosTable extends StatelessWidget {
   final List<Empleado> empleados;
   final bool loading;
-  final Function(int) onRegistrarAsistencia;
+  final Function(int, String, String, String) onAsignarHorario;
+  // 🔹 Callback con (idEmpleado, fecha, horaEntrada, horaSalida)
   final Function(int, String) onEnviarReporte;
 
   const EmpleadosTable({
     required this.empleados,
     required this.loading,
-    required this.onRegistrarAsistencia,
+    required this.onAsignarHorario,
     required this.onEnviarReporte,
     super.key,
   });
@@ -62,18 +63,83 @@ class EmpleadosTable extends StatelessWidget {
                     cells: [
                       DataCell(Text(emp.id.toString())),
                       DataCell(Text(emp.nombre)),
-                      DataCell(Text(emp.email)), 
+                      DataCell(Text(emp.email)),
                       DataCell(Text(
                         (emp.departamento.isEmpty) ? "-" : emp.departamento,
                       )),
                       DataCell(
                         Row(
                           children: [
+                            // 🔹 Botón para Asignar Horario
                             IconButton(
-                              icon: const Icon(Icons.check, color: Colors.green),
-                              tooltip: "Registrar Asistencia",
-                              onPressed: () => onRegistrarAsistencia(emp.id),
+                              icon: const Icon(Icons.schedule, color: Colors.blue),
+                              tooltip: "Asignar Horario",
+                              onPressed: () {
+                                final fechaCtrl = TextEditingController();
+                                final entradaCtrl = TextEditingController();
+                                final salidaCtrl = TextEditingController();
+
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text("Asignar Horario a ${emp.nombre}"),
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              controller: fechaCtrl,
+                                              decoration: const InputDecoration(
+                                                labelText: "Fecha (YYYY-MM-DD)",
+                                              ),
+                                            ),
+                                            TextField(
+                                              controller: entradaCtrl,
+                                              decoration: const InputDecoration(
+                                                labelText: "Hora de Entrada (HH:MM)",
+                                              ),
+                                            ),
+                                            TextField(
+                                              controller: salidaCtrl,
+                                              decoration: const InputDecoration(
+                                                labelText: "Hora de Salida (HH:MM)",
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text("Cancelar"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            onAsignarHorario(
+                                              emp.id,
+                                              fechaCtrl.text.trim(),
+                                              entradaCtrl.text.trim(),
+                                              salidaCtrl.text.trim(),
+                                            );
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text("Guardar"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ).then((_) {
+                                  fechaCtrl.dispose();
+                                  entradaCtrl.dispose();
+                                  salidaCtrl.dispose();
+                                });
+                              },
                             ),
+
+                            // 🔹 Botón para enviar reporte
                             IconButton(
                               icon: const Icon(Icons.report, color: Colors.red),
                               tooltip: "Enviar Reporte",

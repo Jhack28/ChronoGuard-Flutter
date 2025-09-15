@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://10.1.217.105:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://10.1.212.113:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '10.1.217.105'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '10.1.212.113'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -538,53 +538,118 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
  *       201:
  *         description: Asistencia registrada
  */
-// Registrar asistencia
-app.post("/asistencia/registrar", (req, res) => {
-  const { ID_Usuario, Fecha, HoraEntrada, HoraSalida } = req.body;
+// Registrar horario
+app.post("/horarios/registrar", (req, res) => {
+  const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por } = req.body;
   const sql = `
-    INSERT INTO asistencias (ID_Usuario, Fecha, HoraEntrada, HoraSalida)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO Horarios (ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por)
+    VALUES (?, ?, ?, ?, ?)
   `;
-  
-  db.query(sql, [ID_Usuario, Fecha, HoraEntrada, HoraSalida], (err, result) => {
+
+  db.query(sql, [ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por], (err, result) => {
     if (err) {
       console.error("Error en SQL:", err);
-      return res.status(500).json({ error: "Error al registrar asistencia" });
+      return res.status(500).json({ error: "Error al registrar horario" });
     }
     res.status(200).json({ success: true, insertId: result.insertId });
   });
 });
 
 
-
-// Listar asistencias
-/**
- * @swagger
- * /asistencia/lista:
- *   get:
- *     summary: Lista de asistencias registradas
- *     responses:
- *       200:
- *         description: Lista de asistencias
- */
-app.get('/asistencia/lista', (req, res) => {
-  db.query(
-    `SELECT 
-       a.ID_Asistencia AS id,
-       a.ID_Usuario AS idUsuario,
-       u.Nombre AS nombre,
-       a.Fecha AS fecha,
-       a.HoraEntrada AS horaEntrada,
-       a.HoraSalida AS horaSalida
-     FROM asistencias a
-     LEFT JOIN Usuarios u ON u.ID_Usuario = a.ID_Usuario
-     ORDER BY a.ID_Asistencia DESC`,
-    (err, results) => {
-      if (err) {
-        console.error('Error al obtener asistencias:', err);
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
+// Listar todos los horarios
+app.get('/horarios/lista', (req, res) => {
+  const sql = `
+    SELECT 
+      h.ID_Horario AS id,
+      h.ID_Usuario AS idUsuario,
+      u.Nombre AS nombre,
+      h.Dia AS dia,
+      h.Hora_Entrada AS horaEntrada,
+      h.Hora_Salida AS horaSalida,
+      h.Fecha_Asignacion AS fechaAsignacion,
+      s.Nombre AS asignadoPor
+    FROM Horarios h
+    LEFT JOIN Usuarios u ON u.ID_Usuario = h.ID_Usuario
+    LEFT JOIN Usuarios s ON s.ID_Usuario = h.Asignado_Por
+    ORDER BY h.ID_Horario DESC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener horarios:', err);
+      return res.status(500).json({ error: err.message });
     }
-  );
+    res.json(results);
+  });
+});
+
+
+// Listar horarios de un usuario específico
+app.get('/horarios/:idUsuario', (req, res) => {
+  const { idUsuario } = req.params;
+  const sql = `
+    SELECT 
+      h.ID_Horario AS id,
+      h.ID_Usuario AS idUsuario,
+      u.Nombre AS nombre,
+      h.Dia AS dia,
+      h.Hora_Entrada AS horaEntrada,
+      h.Hora_Salida AS horaSalida,
+      h.Fecha_Asignacion AS fechaAsignacion,
+      s.Nombre AS asignadoPor
+    FROM Horarios h
+    LEFT JOIN Usuarios u ON u.ID_Usuario = h.ID_Usuario
+    LEFT JOIN Usuarios s ON s.ID_Usuario = h.Asignado_Por
+    WHERE h.ID_Usuario = ?
+    ORDER BY h.ID_Horario DESC
+  `;
+
+  db.query(sql, [idUsuario], (err, results) => {
+    if (err) {
+      console.error('Error al obtener horarios:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
+  });
+});
+
+// 📌 Editar horario
+app.put("/horarios/:id", (req, res) => {
+  const { id } = req.params;
+  const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
+
+  const sql = `
+    UPDATE Horarios
+    SET ID_Usuario = ?, Dia = ?, Hora_Entrada = ?, Hora_Salida = ?
+    WHERE ID_Horario = ?
+  `;
+
+  db.query(sql, [ID_Usuario, Dia, Hora_Entrada, Hora_Salida, id], (err, result) => {
+    if (err) {
+      console.error("Error al actualizar horario:", err);
+      return res.status(500).json({ error: "Error al actualizar horario" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Horario no encontrado" });
+    }
+    res.status(200).json({ success: true, message: "Horario actualizado correctamente" });
+  });
+});
+
+// 📌 Eliminar horario
+app.delete("/horarios/:id", (req, res) => {
+  const { id } = req.params;
+
+  const sql = "DELETE FROM Horarios WHERE ID_Horario = ?";
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error al eliminar horario:", err);
+      return res.status(500).json({ error: "Error al eliminar horario" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Horario no encontrado" });
+    }
+    res.status(200).json({ success: true, message: "Horario eliminado correctamente" });
+  });
 });

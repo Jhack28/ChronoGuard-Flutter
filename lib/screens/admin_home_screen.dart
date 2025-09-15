@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/asistencia.dart';
+import '../models/Horarios.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart'; // Para obtener/guardar datos en la BD
 import '../widgets/admin_table.dart';
@@ -14,8 +14,8 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   List<Usuario> usuarios = [];
   bool loadingUsuarios = true;
-  List<Asistencia> asistencias = [];
-
+  List<Horario> horarios = [];
+  
   // Por defecto mostramos solo activos en el panel; el switch mostrará los inactivos
   bool _showOnlyInactivos = false;
 

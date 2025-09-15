@@ -1,15 +1,17 @@
 import 'package:http/http.dart' as http;
 import '../models/empleado.dart';
-import '../models/asistencia.dart';
+import '../models/Horarios.dart';
 import '../models/usuario.dart';
 import 'dart:convert';
+
+
 
 class ApiService {
   // Permite sobreescribir al compilar:
   // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.1.217.105:3000',
+    defaultValue: 'http://10.1.212.113:3000',
   );
 
   /// Obtener empleados desde la BD
@@ -24,31 +26,72 @@ class ApiService {
     }
   }
 
-  /// Registrar asistencia
-  static Future<bool> registrarAsistencia(Asistencia asistencia) async {
-  final response = await http.post(
-    Uri.parse("$baseUrl/asistencia/registrar"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode(asistencia.toJson()),
-  );
+  // 📌 Obtener lista de todos los horarios
+  static Future<List<Horario>> obtenerHorarios() async {
+    final response = await http.get(Uri.parse('$baseUrl/horarios/lista'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Horario.fromJson(json)).toList();
+    } else {
+      throw Exception("Error al obtener horarios");
+    }
+  }
+
+ // 📌 Obtener horarios de un usuario específico
+  static Future<List<Horario>> obtenerHorariosUsuario(int idUsuario) async {
+    final response = await http.get(Uri.parse('$baseUrl/horarios/$idUsuario'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Horario.fromJson(json)).toList();
+    } else {
+      throw Exception("Error al obtener horarios del usuario");
+    }
+  }
+
+
+ // 📌 Registrar nuevo horario
+  static Future<bool> asignarHorario(Horario horario) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/horarios/registrar'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(horario.toJson()),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception("Error al asignar horario: ${response.body}");
+    }
+  }
+
+// 📌 Editar horario existente
+  static Future<bool> editarHorario(int idHorario, Horario horario) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/horarios/$idHorario'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(horario.toJson()),
+    );
 
     if (response.statusCode == 200) {
       return true;
     } else {
-      print("Error al registrar asistencia: ${response.body}");
-      return false;
+      throw Exception("Error al editar horario: ${response.body}");
     }
   }
 
-  /// Obtener asistencias
-  static Future<List<Asistencia>> fetchAsistencias() async {
-    final response = await http.get(Uri.parse("$baseUrl/asistencia/lista"));
+// 📌 Eliminar horario
+  static Future<bool> eliminarHorario(int idHorario) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/horarios/$idHorario'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((a) => Asistencia.fromJson(a)).toList();
+      return true;
     } else {
-      throw Exception("Error al obtener asistencias: ${response.body}");
+      throw Exception("Error al eliminar horario: ${response.body}");
     }
   }
 

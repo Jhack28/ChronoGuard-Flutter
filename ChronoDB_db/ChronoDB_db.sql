@@ -82,6 +82,20 @@ CREATE TABLE Notificaciones (
   FOREIGN KEY (ID_EstadoPermiso) REFERENCES EstadoPermisos(ID_EstadoPermiso) ON DELETE CASCADE
 );
 
+CREATE TABLE Horarios (
+  ID_Horario INT PRIMARY KEY AUTO_INCREMENT,
+  ID_Usuario INT NOT NULL, -- empleado al que pertenece
+  Dia ENUM('Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo') NOT NULL,
+  Hora_Entrada TIME NOT NULL,
+  Hora_Salida TIME NOT NULL,
+  Fecha_Asignacion DATE NOT NULL DEFAULT (CURRENT_DATE),
+  Asignado_Por INT NOT NULL, -- secretaria que lo asignó
+  FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE,
+  FOREIGN KEY (Asignado_Por) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
+);
+
+
+
 INSERT INTO Roles (tipo) VALUES ('Admin'), ('Secretaria'), ('Empleado');
 
 INSERT INTO departamento (tipo) VALUES ('Lavado'), ('Planchado'), ('Secado'), ('Transporte');
@@ -110,5 +124,6 @@ VALUES ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Activ
 
 select*from usuarios;
 
-
-
+ 
+ show tables;
+ 

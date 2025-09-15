@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/asistencia.dart';
+import '../models/Horarios.dart';
 
-class AsistenciasTable extends StatelessWidget {
-  final List<Asistencia> Asistencias;
-  final VoidCallback onRegistrar;
+class HorariosTable extends StatelessWidget {
+  final List<Horario> horarios;
+  final VoidCallback onAsignar;
 
-  const AsistenciasTable({
-    required this.Asistencias,
-    required this.onRegistrar,
+  const HorariosTable({
+    required this.horarios,
+    required this.onAsignar,
     super.key,
   });
 
@@ -23,15 +23,15 @@ class AsistenciasTable extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Control de Asistencia',
+                  'Horarios Asignados',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: onRegistrar,
-                  child: const Text('Registrar Asistencia'),
+                  onPressed: onAsignar,
+                  child: const Text('Asignar Horario'),
                 ),
               ],
             ),
@@ -41,20 +41,20 @@ class AsistenciasTable extends StatelessWidget {
             child: DataTable(
               columns: const [
                 DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Nombre')),
-                DataColumn(label: Text('Fecha')),
-                DataColumn(label: Text('Hora Entrada')),
-                DataColumn(label: Text('Hora Salida')),
+                DataColumn(label: Text('Empleado')),
+                DataColumn(label: Text('Día')),
+                DataColumn(label: Text('Entrada')),
+                DataColumn(label: Text('Salida')),
               ],
-              rows: Asistencias
+              rows: horarios
                   .map(
-                    (a) => DataRow(
+                    (h) => DataRow(
                       cells: [
-                        DataCell(Text(a.idUsuario.toString())),
-                        DataCell(Text(a.nombre ?? '')),
-                        DataCell(Text(a.fecha?.toString() ?? '')),
-                        DataCell(Text(a.horaEntrada?.toString() ?? '')),
-                        DataCell(Text(a.horaSalida?.toString() ?? '')),
+                        DataCell(Text(h.id?.toString() ?? '')),
+                        DataCell(Text(h.nombre ?? '')),
+                        DataCell(Text(h.dia)),
+                        DataCell(Text(h.horaEntrada)),
+                        DataCell(Text(h.horaSalida)),
                       ],
                     ),
                   )
