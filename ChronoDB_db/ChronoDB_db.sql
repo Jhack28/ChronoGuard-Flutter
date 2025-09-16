@@ -123,7 +123,5 @@ INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_d
 VALUES ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Activo');
 
 select*from usuarios;
+select*from horarios;
 
- 
- show tables;
- 

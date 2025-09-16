@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://192.168.1.78:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://192.168.10.149:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -39,7 +39,7 @@ app.use(bodyParser.json());
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'chrono';         // <-- usuario recomendado
 const DB_PASS = process.env.DB_PASS || 'StrongPass123';  // <-- cambia si usas otra
-const DB_NAME = process.env.DB_NAME || 'chronoDB_db';
+const DB_NAME = process.env.DB_NAME || 'chronodb_db';
 const DB_PORTS = process.env.DB_PORTS ? process.env.DB_PORTS.split(',').map(p=>parseInt(p)) : [3306, 3307];
 
 let db;
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '192.168.1.78'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '192.168.10.149'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });

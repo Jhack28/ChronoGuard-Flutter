@@ -20,142 +20,137 @@ class EmpleadoHomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: Colors.teal,
-  elevation: 8,
-  centerTitle: true,
-  leading: Row(
-    children: [
-      const SizedBox(width: 8),
-      Image.asset('assets/img/logoCHGcircul.png', height: 32),
-      const SizedBox(width: 5),
-      const Text(
-        "ChronoGuard",
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
+        backgroundColor: const Color.fromARGB(255, 0, 207, 187),
+        elevation: 8,
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/img/logoCHGcircul.png', height: 32),
+            const SizedBox(width: 8),
+            const Text(
+              "ChronoGuard",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NotificacionesEmpleado(idUsuario: 1),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout , color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
       ),
-    ],
-  ),
-),
-
 
       // BODY
       body: Container(
-  decoration: const BoxDecoration(
-    gradient: LinearGradient(
-      colors: [Colors.teal, Colors.lightBlueAccent],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-  ),
-  child: Column(
-    children: [
-      // frase motivacional
-      Container(
-        margin: const EdgeInsets.all(16),
-        child: Text(
-          fraseMotivacional,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontStyle: FontStyle.italic,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.lightBlueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          textAlign: TextAlign.center,
         ),
-      ),
-
-      // dashboard
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Column(
           children: [
-            _buildStatCard(Icons.check_circle, "Asistencias", "25"),
-            _buildStatCard(Icons.pending_actions, "Permisos", "3"),
-            _buildStatCard(Icons.timer_off, "Retrasos", "1"),
+            Container(
+              margin: const EdgeInsets.all(16),
+              child: Text(
+                fraseMotivacional,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatCard(Icons.pending_actions, "Permisos", "3"),
+                  _buildStatCard(Icons.timer_off, "Inasistencias", "1"),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 16),
+                children: [
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.note_add,
+                    color: Colors.white,
+                    title: "Solicitar permiso",
+                    onTap: () => _mostrarModalPermiso(context),
+                  ),
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.lock_reset,
+                    color: Colors.orange[200]!,
+                    title: "Modificar contraseña",
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AlertDialog(
+                          title: Text("Modificar contraseña"),
+                          content: Text("Funcionalidad próximamente disponible."),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.calendar_month,
+                    color: Colors.lightBlue[100]!,
+                    title: "Mis asistencias",
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AlertDialog(
+                          title: Text("Mis asistencias"),
+                          content: Text("Funcionalidad próximamente disponible."),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
 
-      const SizedBox(height: 20),
-
-      // expand para que los botones ocupen bien el espacio
-      Expanded(
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: 16),
-          children: [
-            _buildMenuCard(
-              context,
-              icon: Icons.note_add,
-              color: Colors.white,
-              title: "Solicitar permiso",
-              onTap: () => _mostrarModalPermiso(context),
-            ),
-            _buildMenuCard(
-              context,
-              icon: Icons.lock_reset,
-              color: Colors.orange[200]!,
-              title: "Modificar contraseña",
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const AlertDialog(
-                    title: Text("Modificar contraseña"),
-                    content: Text("Funcionalidad próximamente disponible."),
-                  ),
-                );
-              },
-            ),
-            _buildMenuCard(
-              context,
-              icon: Icons.calendar_month,
-              color: Colors.lightBlue[100]!,
-              title: "Mis asistencias",
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const AlertDialog(
-                    title: Text("Mis asistencias"),
-                    content: Text("Funcionalidad próximamente disponible."),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    ],
-  ),
-),
-
-
-      // NAV BOTTOM
+      // NUEVO BottomAppBar con texto centrado
       bottomNavigationBar: BottomAppBar(
         color: Colors.teal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NotificacionesEmpleado(idUsuario: 1),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.notifications, color: Colors.white),
-            ),
-            IconButton(
-              onPressed: () {
-                print("Configuración");
-              },
-              icon: const Icon(Icons.settings, color: Colors.white),
-            ),
-          ],
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
+            '© 2024 ChronoGuard. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );
@@ -165,11 +160,11 @@ class EmpleadoHomeScreen extends StatelessWidget {
   Widget _buildStatCard(IconData icon, String title, String value) {
     return Card(
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 4,
       child: Container(
         padding: const EdgeInsets.all(12),
-        width: 95,
+        width: 110,
         child: Column(
           children: [
             Icon(icon, color: Colors.teal, size: 30),
@@ -179,7 +174,7 @@ class EmpleadoHomeScreen extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Colors.black,
               ),
             ),
             Text(
@@ -240,7 +235,6 @@ class EmpleadoHomeScreen extends StatelessWidget {
     final descripcionCtrl = TextEditingController();
     DateTime? fechaInicio;
     DateTime? fechaFin;
-
     showDialog(
       context: context,
       builder: (context) {
@@ -357,11 +351,9 @@ class EmpleadoHomeScreen extends StatelessWidget {
                       fechaInicio?.toIso8601String().substring(0, 10),
                   'Fecha_fin': fechaFin?.toIso8601String().substring(0, 10),
                 };
-
                 try {
                   final idTipoPermiso =
                       await ApiService.crearPermiso(permisoData);
-
                   await ApiService.crearNotificacionEmpleado({
                     'ID_Usuario': 1,
                     'ID_EstadoPermiso': 1,
@@ -371,7 +363,6 @@ class EmpleadoHomeScreen extends StatelessWidget {
                         DateTime.now().toIso8601String().substring(0, 10),
                     'Estado': 'Pendiente',
                   });
-
                   await ApiService.crearNotificacionAdmin({
                     'Fecha_Solicitud':
                         DateTime.now().toIso8601String().substring(0, 10),
@@ -380,7 +371,6 @@ class EmpleadoHomeScreen extends StatelessWidget {
                     'tipo': tipoPermiso,
                     'Correo': 'empleado@correo.com',
                   });
-
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

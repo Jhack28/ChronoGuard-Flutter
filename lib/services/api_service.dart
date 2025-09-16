@@ -9,7 +9,7 @@ class ApiService {
   // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.78:3000',
+    defaultValue: 'http://192.168.10.149:3000',
   );
 
   /// Obtener empleados desde la BD
