@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart'; // <-- agregado
+import 'secretaria_home_screen.dart'; // <-- Importa la pantalla de inicio de secretaria
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -194,7 +195,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String contrasena = '';
   bool _obscurePassword = true;
 
-  Future<String?> loginUser(String correo, String contrasena) async {
+  Future<Map<String, dynamic>?> loginUser(
+    String correo,
+    String contrasena,
+  ) async {
     final response = await http.post(
       Uri.parse('${ApiService.baseUrl}/login'),
       headers: {'Content-Type': 'application/json'},
@@ -204,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data['success'] == true) {
-        return data['ID_Rol'].toString();
+        return data; // Retorna todo el objeto para usar ID_Usuario y ID_Rol
       }
     }
     return null;
@@ -218,13 +222,22 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Intentando iniciar sesión...')));
 
-      String? idRol = await loginUser(correo, contrasena);
+      final data = await loginUser(correo, contrasena);
 
-      if (idRol != null) {
+      if (data != null) {
+        final idRol = data['ID_Rol'].toString();
+        final idUsuario = data['ID_Usuario'];
+
         if (idRol == '1') {
           Navigator.pushReplacementNamed(context, '/adminHome');
-        } else if (idRol == '2') {
-          Navigator.pushReplacementNamed(context, '/secrethome');
+        } else if (idRol == '2') { // Secretaria
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SecretariaHomeScreen(idSecretaria: idUsuario),
+          ),
+        );
+
         } else if (idRol == '3') {
           Navigator.pushReplacementNamed(context, '/empleadoHome');
         } else {

@@ -6,13 +6,15 @@ import '../widgets/empleados_table.dart';
 import '../widgets/horarios_table.dart';
 
 class SecretariaHomeScreen extends StatefulWidget {
-  const SecretariaHomeScreen({super.key});
+  final int idSecretaria;
+  const SecretariaHomeScreen({super.key, required this.idSecretaria});
 
   @override
   _SecretariaHomeScreenState createState() => _SecretariaHomeScreenState();
 }
 
 class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
+  int get idSecretaria => widget.idSecretaria;
   List<Empleado> empleados = [];
   bool loadingEmpleados = true;
   List<Horario> horarios = [];
@@ -22,6 +24,28 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     super.initState();
     _cargarEmpleados();
     _cargarHorarios();
+  }
+
+  // 🔹 Función auxiliar para convertir fecha → nombre del día
+  String _mapDiaSemana(DateTime fecha) {
+    switch (fecha.weekday) {
+      case DateTime.monday:
+        return "Lunes";
+      case DateTime.tuesday:
+        return "Martes";
+      case DateTime.wednesday:
+        return "Miercoles";
+      case DateTime.thursday:
+        return "Jueves";
+      case DateTime.friday:
+        return "Viernes";
+      case DateTime.saturday:
+        return "Sabado";
+      case DateTime.sunday:
+        return "Domingo";
+      default:
+        return "Lunes";
+    }
   }
 
   Future<void> _cargarEmpleados() async {
@@ -119,6 +143,97 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     );
   }
 
+  void _mostrarDialogoAsignarHorario() {
+    if (empleados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay empleados registrados')),
+      );
+      return;
+    }
+
+    int selectedId = empleados.first.id;
+    final entradaCtrl = TextEditingController();
+    final salidaCtrl = TextEditingController();
+    DateTime? fechaSeleccionada;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Asignar Horario'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<int>(
+                value: selectedId,
+                isExpanded: true,
+                items: empleados
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e.id,
+                        child: Text('${e.nombre} (${e.rol})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) selectedId = v;
+                },
+              ),
+              TextField(
+                controller: entradaCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Hora Entrada (HH:mm)',
+                ),
+              ),
+              TextField(
+                controller: salidaCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Hora Salida (HH:mm)',
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) fechaSeleccionada = picked;
+                },
+                child: const Text('Seleccionar Fecha'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (fechaSeleccionada == null) return;
+                final nuevo = Horario(
+                  idUsuario: selectedId,
+                  dia: _mapDiaSemana(fechaSeleccionada!),
+                  horaEntrada: entradaCtrl.text,
+                  horaSalida: salidaCtrl.text,
+                  // asignadoPor: idSecretaria, // <-- Aquí se asigna el id de la secretaria
+                );
+                final ok = await ApiService.asignarHorario(nuevo, idSecretaria);
+                if (ok) {
+                  await _cargarHorarios();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,26 +262,25 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
             EmpleadosTable(
               empleados: empleados,
               loading: loadingEmpleados,
+
               // ✅ Ahora este callback asigna horarios y los guarda en la BD
               onAsignarHorario: (idEmpleado, fecha, entrada, salida) async {
-                final nuevo = Horario(
-                  idUsuario: idEmpleado,
-                  dia: fecha, // si en tu BD es fecha, cámbialo a "fecha"
-                  horaEntrada: entrada,
-                  horaSalida: salida,
-                );
-
-                final ok = await ApiService.asignarHorario(nuevo);
-                if (ok) {
-                  setState(() => horarios.add(nuevo));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Horario asignado correctamente")),
+                try {
+                  final nuevo = Horario(
+                    idUsuario: idEmpleado,
+                    dia: _mapDiaSemana(DateTime.parse(fecha)),
+                    horaEntrada: entrada,
+                    horaSalida: salida,
                   );
-                  _cargarHorarios();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Error al asignar horario")),
-                  );
+                  final ok = await ApiService.asignarHorario(
+                    nuevo,
+                    idSecretaria!,
+                  ); // <-- Pasa el id de la secretaria aquí
+                  if (ok) {
+                    await _cargarHorarios();
+                  }
+                } catch (e) {
+                  print("Error al asignar horario: $e");
                 }
               },
               onEnviarReporte: (idEmpleado, motivo) {
@@ -180,7 +294,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
 
             HorariosTable(
               horarios: horarios,
-              onAsignar: _cargarHorarios,
+              onAsignar: _mostrarDialogoAsignarHorario,
             ),
 
             Padding(

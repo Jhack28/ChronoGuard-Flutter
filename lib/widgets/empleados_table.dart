@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/empleado.dart'; // Importa tu modelo
+import '../models/empleado.dart';
 
 class EmpleadosTable extends StatelessWidget {
   final List<Empleado> empleados;
   final bool loading;
   final Function(int, String, String, String) onAsignarHorario;
-  // 🔹 Callback con (idEmpleado, fecha, horaEntrada, horaSalida)
   final Function(int, String) onEnviarReporte;
 
   const EmpleadosTable({
@@ -57,135 +56,139 @@ class EmpleadosTable extends StatelessWidget {
                 DataColumn(label: Text("Departamento")),
                 DataColumn(label: Text("Acciones")),
               ],
-              rows: empleados.map(
-                (emp) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(emp.id.toString())),
-                      DataCell(Text(emp.nombre)),
-                      DataCell(Text(emp.email)),
-                      DataCell(Text(
-                        (emp.departamento.isEmpty) ? "-" : emp.departamento,
-                      )),
-                      DataCell(
-                        Row(
-                          children: [
-                            // 🔹 Botón para Asignar Horario
-                            IconButton(
-                              icon: const Icon(Icons.schedule, color: Colors.blue),
-                              tooltip: "Asignar Horario",
-                              onPressed: () {
-                                final fechaCtrl = TextEditingController();
-                                final entradaCtrl = TextEditingController();
-                                final salidaCtrl = TextEditingController();
+              rows: empleados.map((emp) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(emp.id.toString())),
+                    DataCell(Text(emp.nombre)),
+                    DataCell(Text(emp.email)),
+                    DataCell(Text(emp.departamento.isEmpty ? "-" : emp.departamento)),
+                    DataCell(
+                      Row(
+                        children: [
+                          // Asignar Horario
+                          IconButton(
+                            icon: const Icon(Icons.schedule, color: Colors.blue),
+                            tooltip: "Asignar Horario",
+                            onPressed: () {
+                              final fechaCtrl = TextEditingController(
+                                  text: DateTime.now().toIso8601String().split('T')[0]
+                              ); // Fecha actual por defecto
+                              final entradaCtrl = TextEditingController();
+                              final salidaCtrl = TextEditingController();
 
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text("Asignar Horario a ${emp.nombre}"),
-                                      content: SingleChildScrollView(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextField(
-                                              controller: fechaCtrl,
-                                              decoration: const InputDecoration(
-                                                labelText: "Fecha (YYYY-MM-DD)",
-                                              ),
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: Text("Asignar Horario a ${emp.nombre}"),
+                                    content: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: fechaCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: "Fecha (YYYY-MM-DD)",
                                             ),
-                                            TextField(
-                                              controller: entradaCtrl,
-                                              decoration: const InputDecoration(
-                                                labelText: "Hora de Entrada (HH:MM)",
-                                              ),
+                                          ),
+                                          TextField(
+                                            controller: entradaCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: "Hora de Entrada (HH:MM)",
                                             ),
-                                            TextField(
-                                              controller: salidaCtrl,
-                                              decoration: const InputDecoration(
-                                                labelText: "Hora de Salida (HH:MM)",
-                                              ),
+                                          ),
+                                          TextField(
+                                            controller: salidaCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: "Hora de Salida (HH:MM)",
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text("Cancelar"),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            onAsignarHorario(
-                                              emp.id,
-                                              fechaCtrl.text.trim(),
-                                              entradaCtrl.text.trim(),
-                                              salidaCtrl.text.trim(),
-                                            );
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text("Guardar"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ).then((_) {
-                                  fechaCtrl.dispose();
-                                  entradaCtrl.dispose();
-                                  salidaCtrl.dispose();
-                                });
-                              },
-                            ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text("Cancelar"),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          final fecha = fechaCtrl.text.trim();
+                                          final entrada = entradaCtrl.text.trim();
+                                          final salida = salidaCtrl.text.trim();
 
-                            // 🔹 Botón para enviar reporte
-                            IconButton(
-                              icon: const Icon(Icons.report, color: Colors.red),
-                              tooltip: "Enviar Reporte",
-                              onPressed: () {
-                                final controller = TextEditingController();
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text("Reporte para ${emp.nombre}"),
-                                      content: TextField(
-                                        controller: controller,
-                                        decoration: const InputDecoration(
-                                          hintText: "Escribe el motivo",
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text("Cancelar"),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            onEnviarReporte(
-                                              emp.id,
-                                              controller.text.trim(),
+                                          if (entrada.isEmpty || salida.isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                  content: Text('Debes ingresar entrada y salida')),
                                             );
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text("Enviar"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ).then((_) => controller.dispose());
-                              },
-                            ),
-                          ],
-                        ),
+                                            return;
+                                          }
+
+                                          onAsignarHorario(emp.id, fecha, entrada, salida);
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text("Guardar"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ).then((_) {
+                                fechaCtrl.dispose();
+                                entradaCtrl.dispose();
+                                salidaCtrl.dispose();
+                              });
+                            },
+                          ),
+                          // Enviar Reporte
+                          IconButton(
+                            icon: const Icon(Icons.report, color: Colors.red),
+                            tooltip: "Enviar Reporte",
+                            onPressed: () {
+                              final controller = TextEditingController();
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: Text("Reporte para ${emp.nombre}"),
+                                    content: TextField(
+                                      controller: controller,
+                                      decoration: const InputDecoration(
+                                        hintText: "Escribe el motivo",
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text("Cancelar"),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          if (controller.text.trim().isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                  content: Text('Debes escribir un motivo')),
+                                            );
+                                            return;
+                                          }
+                                          onEnviarReporte(emp.id, controller.text.trim());
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text("Enviar"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ).then((_) => controller.dispose());
+                            },
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                },
-              ).toList(),
+                    ),
+                  ],
+                );
+              }).toList(),
             ),
           ),
         ],

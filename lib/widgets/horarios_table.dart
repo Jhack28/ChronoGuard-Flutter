@@ -24,10 +24,7 @@ class HorariosTable extends StatelessWidget {
               children: [
                 const Text(
                   'Horarios Asignados',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 ElevatedButton(
                   onPressed: onAsignar,
@@ -41,20 +38,24 @@ class HorariosTable extends StatelessWidget {
             child: DataTable(
               columns: const [
                 DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Empleado')),
+                DataColumn(label: Text('Empleado (ID)')),
                 DataColumn(label: Text('Día')),
                 DataColumn(label: Text('Entrada')),
                 DataColumn(label: Text('Salida')),
+                DataColumn(label: Text('Asignado Por')), // nueva columna
               ],
               rows: horarios
                   .map(
                     (h) => DataRow(
                       cells: [
-                        DataCell(Text(h.id?.toString() ?? '')),
-                        DataCell(Text(h.nombre ?? '')),
+                        DataCell(Text(h.idHorario?.toString() ?? '')),
+                        DataCell(Text(h.idUsuario.toString())),
                         DataCell(Text(h.dia)),
                         DataCell(Text(h.horaEntrada)),
                         DataCell(Text(h.horaSalida)),
+                        DataCell(
+                          Text(h.asignadoPor ?? ''),
+                        ), // muestra el nombre de la secretaria
                       ],
                     ),
                   )

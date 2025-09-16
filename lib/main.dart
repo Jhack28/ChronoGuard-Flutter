@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       home: const Home(), // pantalla inicial
       routes: {
         '/adminHome': (context) => const AdminHomeScreen(),
-        '/secrethome': (context) => const SecretariaHomeScreen(),
+        //'/secrethome': (context) => const SecretariaHomeScreen(),
         '/empleadoHome': (context) => const EmpleadoHomeScreen(), // 👈 aquí va tu pantalla de empleado
       },
     );

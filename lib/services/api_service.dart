@@ -4,14 +4,12 @@ import '../models/Horarios.dart';
 import '../models/usuario.dart';
 import 'dart:convert';
 
-
-
 class ApiService {
   // Permite sobreescribir al compilar:
   // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.1.212.113:3000',
+    defaultValue: 'http://192.168.1.78:3000',
   );
 
   /// Obtener empleados desde la BD
@@ -38,7 +36,7 @@ class ApiService {
     }
   }
 
- // 📌 Obtener horarios de un usuario específico
+  // 📌 Obtener horarios de un usuario específico
   static Future<List<Horario>> obtenerHorariosUsuario(int idUsuario) async {
     final response = await http.get(Uri.parse('$baseUrl/horarios/$idUsuario'));
 
@@ -50,12 +48,14 @@ class ApiService {
     }
   }
 
-
- // 📌 Registrar nuevo horario
-  static Future<bool> asignarHorario(Horario horario) async {
+  // 📌 Registrar nuevo horario
+  static Future<bool> asignarHorario(Horario horario, int idSecretaria) async {
     final response = await http.post(
       Uri.parse('$baseUrl/horarios/registrar'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-usuario-id': idSecretaria.toString(),
+      },
       body: jsonEncode(horario.toJson()),
     );
 
@@ -66,7 +66,7 @@ class ApiService {
     }
   }
 
-// 📌 Editar horario existente
+  // 📌 Editar horario existente
   static Future<bool> editarHorario(int idHorario, Horario horario) async {
     final response = await http.put(
       Uri.parse('$baseUrl/horarios/$idHorario'),
@@ -81,7 +81,7 @@ class ApiService {
     }
   }
 
-// 📌 Eliminar horario
+  // 📌 Eliminar horario
   static Future<bool> eliminarHorario(int idHorario) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/horarios/$idHorario'),

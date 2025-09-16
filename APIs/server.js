@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://10.1.212.113:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://192.168.1.78:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,11 +82,44 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '10.1.212.113'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '192.168.1.78'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
 });
+
+// ---------- Helpers para Horarios ----------
+const VALID_DIAS = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+
+function normalizeDia(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  // normalizar: eliminar espacios y capitalizar primera letra
+  const s = raw.trim();
+  if (s.length === 0) return null;
+  const normalized = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  // Manejo especial si viene con acentos o mayúsculas distintas (siempre compara sin acentos sería ideal,
+  // pero dado el ENUM en la BD asumimos esta capitalización)
+  return VALID_DIAS.includes(normalized) ? normalized : null;
+}
+
+function normalizeTime(t) {
+  if (!t) return null;
+  const s = String(t).trim();
+  // Si viene HH:mm -> convertir a HH:mm:00
+  if (/^\d{1,2}:\d{2}$/.test(s)) {
+    const parts = s.split(':');
+    const hh = parts[0].padStart(2, '0');
+    return `${hh}:${parts[1]}:00`;
+  }
+  // Si viene HH:mm:ss
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(s)) {
+    const parts = s.split(':');
+    const hh = parts[0].padStart(2, '0');
+    return `${hh}:${parts[1]}:${parts[2]}`;
+  }
+  // formato inválido
+  return null;
+}
 
 // Endpoint de login
 /**
@@ -129,7 +162,7 @@ app.post('/login', (req, res) => {
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
   
   db.query(
-    'SELECT ID_Rol FROM Usuarios WHERE Email = ? AND Password = ?',
+    'SELECT ID_Usuario, ID_Rol FROM Usuarios WHERE Email = ? AND Password = ?',
     [email, passwordMd5],
     (err, results) => {
       if (err) {
@@ -137,7 +170,11 @@ app.post('/login', (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
       }
       if (results.length > 0) {
-        return res.json({ success: true, ID_Rol: results[0].ID_Rol });
+        return res.json({
+          success: true,
+          ID_Rol: results[0].ID_Rol,
+          ID_Usuario: results[0].ID_Usuario // <-- Agrega esto
+        });
       } else {
         return res.json({ success: false, message: 'Credenciales inválidas' });
       }
@@ -540,19 +577,59 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
  */
 // Registrar horario
 app.post("/horarios/registrar", (req, res) => {
-  const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por } = req.body;
-  const sql = `
-    INSERT INTO Horarios (ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por)
-    VALUES (?, ?, ?, ?, ?)
-  `;
+  try {
+    const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
 
-  db.query(sql, [ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por], (err, result) => {
-    if (err) {
-      console.error("Error en SQL:", err);
-      return res.status(500).json({ error: "Error al registrar horario" });
+    // Tomar secretaria desde token o header
+    const asignadoPor = req.user?.id || req.headers["x-usuario-id"];
+
+    if (!ID_Usuario || !Dia || !Hora_Entrada || !Hora_Salida) {
+      return res.status(400).json({
+        error: "Faltan campos requeridos: ID_Usuario, Dia, Hora_Entrada, Hora_Salida",
+      });
     }
-    res.status(200).json({ success: true, insertId: result.insertId });
-  });
+
+    if (!asignadoPor) {
+      return res.status(401).json({ error: "No autorizado: secretaria no logueada" });
+    }
+
+    // Normalizar valores
+    const diaNorm = normalizeDia(Dia);
+    if (!diaNorm) {
+      return res.status(400).json({
+        error: "Valor inválido para 'Dia'. Debe ser uno de: " + VALID_DIAS.join(", "),
+      });
+    }
+
+    const horaEntradaNorm = normalizeTime(Hora_Entrada);
+    const horaSalidaNorm = normalizeTime(Hora_Salida);
+    if (!horaEntradaNorm || !horaSalidaNorm) {
+      return res
+        .status(400)
+        .json({ error: "Formato inválido de horas. Use HH:mm o HH:mm:ss" });
+    }
+
+    // Query SQL
+    const sql = `
+      INSERT INTO Horarios (ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      sql,
+      [ID_Usuario, diaNorm, horaEntradaNorm, horaSalidaNorm, asignadoPor],
+      (err, result) => {
+        if (err) {
+          console.error("Error en SQL (insert horario):", err);
+          return res.status(500).json({ error: err.message });
+        }
+        return res.status(201).json({ success: true, insertId: result.insertId });
+      }
+    );
+  } catch (err) {
+    console.error("Error en /horarios/registrar:", err);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
 });
 
 
@@ -567,13 +644,14 @@ app.get('/horarios/lista', (req, res) => {
       h.Hora_Entrada AS horaEntrada,
       h.Hora_Salida AS horaSalida,
       h.Fecha_Asignacion AS fechaAsignacion,
+      s.ID_Usuario AS asignadoPorId,
       s.Nombre AS asignadoPor
     FROM Horarios h
     LEFT JOIN Usuarios u ON u.ID_Usuario = h.ID_Usuario
     LEFT JOIN Usuarios s ON s.ID_Usuario = h.Asignado_Por
     ORDER BY h.ID_Horario DESC
   `;
-  
+
   db.query(sql, (err, results) => {
     if (err) {
       console.error('Error al obtener horarios:', err);
@@ -582,7 +660,6 @@ app.get('/horarios/lista', (req, res) => {
     res.json(results);
   });
 });
-
 
 // Listar horarios de un usuario específico
 app.get('/horarios/:idUsuario', (req, res) => {
@@ -596,6 +673,7 @@ app.get('/horarios/:idUsuario', (req, res) => {
       h.Hora_Entrada AS horaEntrada,
       h.Hora_Salida AS horaSalida,
       h.Fecha_Asignacion AS fechaAsignacion,
+      s.ID_Usuario AS asignadoPorId,
       s.Nombre AS asignadoPor
     FROM Horarios h
     LEFT JOIN Usuarios u ON u.ID_Usuario = h.ID_Usuario
@@ -613,10 +691,21 @@ app.get('/horarios/:idUsuario', (req, res) => {
   });
 });
 
-// 📌 Editar horario
+// Editar horario
 app.put("/horarios/:id", (req, res) => {
   const { id } = req.params;
   const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
+
+  if (!ID_Usuario || !Dia || !Hora_Entrada || !Hora_Salida) {
+    return res.status(400).json({ error: "Faltan campos requeridos para actualizar" });
+  }
+
+  const diaNorm = normalizeDia(Dia);
+  const horaEntradaNorm = normalizeTime(Hora_Entrada);
+  const horaSalidaNorm = normalizeTime(Hora_Salida);
+
+  if (!diaNorm) return res.status(400).json({ error: "Dia inválido" });
+  if (!horaEntradaNorm || !horaSalidaNorm) return res.status(400).json({ error: "Hora entrada/salida inválida" });
 
   const sql = `
     UPDATE Horarios
@@ -624,10 +713,10 @@ app.put("/horarios/:id", (req, res) => {
     WHERE ID_Horario = ?
   `;
 
-  db.query(sql, [ID_Usuario, Dia, Hora_Entrada, Hora_Salida, id], (err, result) => {
+  db.query(sql, [ID_Usuario, diaNorm, horaEntradaNorm, horaSalidaNorm, id], (err, result) => {
     if (err) {
       console.error("Error al actualizar horario:", err);
-      return res.status(500).json({ error: "Error al actualizar horario" });
+      return res.status(500).json({ error: err.message });
     }
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Horario no encontrado" });
@@ -636,16 +725,15 @@ app.put("/horarios/:id", (req, res) => {
   });
 });
 
-// 📌 Eliminar horario
+// Eliminar horario
 app.delete("/horarios/:id", (req, res) => {
   const { id } = req.params;
-
   const sql = "DELETE FROM Horarios WHERE ID_Horario = ?";
 
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error al eliminar horario:", err);
-      return res.status(500).json({ error: "Error al eliminar horario" });
+      return res.status(500).json({ error: err.message });
     }
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Horario no encontrado" });
