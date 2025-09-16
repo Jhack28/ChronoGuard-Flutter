@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/empleado.dart';
 import '../models/Horarios.dart';
-import '../services/api_service.dart'; // Para obtener/guardar datos en la BD
+import '../services/api_service.dart';
 import '../widgets/empleados_table.dart';
 import '../widgets/horarios_table.dart';
 
@@ -18,7 +18,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
   List<Empleado> empleados = [];
   bool loadingEmpleados = true;
   List<Horario> horarios = [];
-  int? filtroEmpleadoId; // <-- nuevo
+  int? filtroEmpleadoId;
 
   @override
   void initState() {
@@ -27,7 +27,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     _cargarHorarios();
   }
 
-  // 🔹 Función auxiliar para convertir fecha → nombre del día
   String _mapDiaSemana(DateTime fecha) {
     switch (fecha.weekday) {
       case DateTime.monday:
@@ -67,7 +66,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
 
   Future<void> _cargarHorarios() async {
     try {
-      final list = await ApiService.obtenerHorarios(); // ✅ ahora trae todos
+      final list = await ApiService.obtenerHorarios();
       setState(() {
         horarios = list;
       });
@@ -76,7 +75,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     }
   }
 
-  // Mostrar diálogo para enviar reporte a un empleado
   void mostrarDialogoReporteParaEmpleado(int idEmpleado) {
     final empleado = empleados.firstWhere(
       (e) => e.id == idEmpleado,
@@ -90,9 +88,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
         estado: "",
       ),
     );
-
     final controller = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) {
@@ -124,10 +120,8 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   );
                   return;
                 }
-
                 // Aquí podrías llamar al backend si tienes endpoint de reportes
                 // await ApiService.enviarReporte(idEmpleado, motivo);
-
                 controller.dispose();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -151,7 +145,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       );
       return;
     }
-
     int selectedId = empleados.first.id;
     final entradaCtrl = TextEditingController();
     final salidaCtrl = TextEditingController();
@@ -219,7 +212,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   dia: _mapDiaSemana(fechaSeleccionada!),
                   horaEntrada: entradaCtrl.text,
                   horaSalida: salidaCtrl.text,
-                  // asignadoPor: idSecretaria, // <-- Aquí se asigna el id de la secretaria
+                  // asignadoPor: idSecretaria,
                 );
                 final ok = await ApiService.asignarHorario(nuevo, idSecretaria);
                 if (ok) {
@@ -261,134 +254,136 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Container(
-      decoration: const BoxDecoration(      
-      gradient: LinearGradient(
-      colors: [Colors.teal, Colors.lightBlueAccent],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.lightBlueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-        child: Column(
-          children: [
-            // Filtro por empleado
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  const Text('Filtrar por empleado:'),
-                  const SizedBox(width: 10),
-                  DropdownButton<int>(
-                    value: filtroEmpleadoId,
-                    hint: const Text('Todos'),
-                    items: [
-                      const DropdownMenuItem<int>(
-                        value: null,
-                        child: Text('Todos'),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            const Text('Filtrar por empleado:'),
+                            const SizedBox(width: 10),
+                            DropdownButton<int>(
+                              value: filtroEmpleadoId,
+                              hint: const Text('Todos'),
+                              items: [
+                                const DropdownMenuItem<int>(
+                                  value: null,
+                                  child: Text('Todos'),
+                                ),
+                                ...empleados.map(
+                                  (e) => DropdownMenuItem<int>(
+                                    value: e.id,
+                                    child: Text(e.nombre),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (v) {
+                                setState(() {
+                                  filtroEmpleadoId = v;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                      ...empleados.map(
-                        (e) => DropdownMenuItem<int>(
-                          value: e.id,
-                          child: Text(e.nombre),
+                      EmpleadosTable(
+                        empleados: empleados,
+                        loading: loadingEmpleados,
+                        onAsignarHorario: (idEmpleado, fecha, entrada, salida) async {
+                          try {
+                            final nuevo = Horario(
+                              idUsuario: idEmpleado,
+                              dia: _mapDiaSemana(DateTime.parse(fecha)),
+                              horaEntrada: entrada,
+                              horaSalida: salida,
+                            );
+                            final ok = await ApiService.asignarHorario(
+                              nuevo,
+                              idSecretaria,
+                            );
+                            if (ok) await _cargarHorarios();
+                          } catch (e) {
+                            print("Error al asignar horario: $e");
+                          }
+                        },
+                        onEnviarReporte: (idEmpleado, motivo) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Reporte para empleado $idEmpleado: $motivo'),
+                            ),
+                          );
+                        },
+                      ),
+                      HorariosTable(
+                        horarios: horariosFiltrados,
+                        onAsignar: _mostrarDialogoAsignarHorario,
+                        onEliminar: (idHorario) async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Eliminar horario'),
+                              content: const Text(
+                                '¿Estás seguro de que deseas eliminar este horario?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Eliminar'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            final ok = await ApiService.eliminarHorario(idHorario);
+                            if (ok) {
+                              await _cargarHorarios();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Horario eliminado')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _mostrarSeleccionEmpleadoParaReporte();
+                          },
+                          child: const Text('Generar Reporte'),
                         ),
                       ),
                     ],
-                    onChanged: (v) {
-                      setState(() {
-                        filtroEmpleadoId = v;
-                      });
-                    },
                   ),
-                ],
+                ),
               ),
-            ),
-            EmpleadosTable(
-              empleados: empleados,
-              loading: loadingEmpleados,
-
-              // ✅ Ahora este callback asigna horarios y los guarda en la BD
-              onAsignarHorario: (idEmpleado, fecha, entrada, salida) async {
-                try {
-                  final nuevo = Horario(
-                    idUsuario: idEmpleado,
-                    dia: _mapDiaSemana(DateTime.parse(fecha)),
-                    horaEntrada: entrada,
-                    horaSalida: salida,
-                  );
-                  final ok = await ApiService.asignarHorario(
-                    nuevo,
-                    idSecretaria,
-                  ); // <-- Pasa el id de la secretaria aquí
-                  if (ok) {
-                    await _cargarHorarios();
-                  }
-                } catch (e) {
-                  print("Error al asignar horario: $e");
-                }
-              },
-              onEnviarReporte: (idEmpleado, motivo) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Reporte para empleado $idEmpleado: $motivo'),
-                  ),
-                );
-              },
-            ),
-
-            HorariosTable(
-              horarios: horariosFiltrados,
-              onAsignar: _mostrarDialogoAsignarHorario,
-              onEliminar: (idHorario) async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Eliminar horario'),
-                    content: const Text(
-                      '¿Estás seguro de que deseas eliminar este horario?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true) {
-                  final ok = await ApiService.eliminarHorario(idHorario);
-                  if (ok) {
-                    await _cargarHorarios();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Horario eliminado')),
-                    );
-                  }
-                }
-              },
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: () {
-                  _mostrarSeleccionEmpleadoParaReporte();
-                },
-                child: const Text('Generar Reporte'),
-              ),
-            ),
-          ],
+            );
+          },
         ),
-      ),
       ),
       bottomNavigationBar: BottomAppBar(
         color: Colors.teal,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: const Text(
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
             '© 2024 ChronoGuard. Todos los derechos reservados.',
             textAlign: TextAlign.center,
           ),
@@ -397,7 +392,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     );
   }
 
-  // Selección de empleado para generar reporte (botón "Generar Reporte")
   void _mostrarSeleccionEmpleadoParaReporte() {
     if (empleados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -405,7 +399,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       );
       return;
     }
-
     int selectedId = empleados.first.id;
     showDialog(
       context: context,

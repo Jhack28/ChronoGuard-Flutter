@@ -39,7 +39,7 @@ app.use(bodyParser.json());
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'chrono';         // <-- usuario recomendado
 const DB_PASS = process.env.DB_PASS || 'StrongPass123';  // <-- cambia si usas otra
-const DB_NAME = process.env.DB_NAME || 'chronodb_db';
+const DB_NAME = process.env.DB_NAME || 'chronoDB_db';
 const DB_PORTS = process.env.DB_PORTS ? process.env.DB_PORTS.split(',').map(p=>parseInt(p)) : [3306, 3307];
 
 let db;
