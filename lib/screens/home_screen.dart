@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../services/api_service.dart'; // <-- agregado
 import 'secretaria_home_screen.dart'; // <-- Importa la pantalla de inicio de secretaria
 
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -135,6 +136,19 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
+
+      // Añado BottomAppBar con el texto de derechos reservados
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.teal,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
+            '© 2024 ChronoGuard. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
     );
   }
 
@@ -160,7 +174,7 @@ class _HomeState extends State<Home> {
       child: Column(
         children: [
           Image.asset(imagePath, width: 250, height: 150, fit: BoxFit.cover),
-          SizedBox(height: 10),
+          SizedBox(height: 20),
           Text(
             title,
             style: TextStyle(
@@ -181,7 +195,6 @@ class _HomeState extends State<Home> {
     );
   }
 }
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -269,7 +282,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            // Añado padding para que el formulario este centrado
+            padding: EdgeInsetsDirectional.fromSTEB(50, 130, 50, 0),
             child: Form(
               key: _formKey,
               child: ListView(
