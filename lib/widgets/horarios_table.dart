@@ -4,10 +4,12 @@ import '../models/Horarios.dart';
 class HorariosTable extends StatelessWidget {
   final List<Horario> horarios;
   final VoidCallback onAsignar;
+  final Function(int) onEliminar; // <-- nuevo parámetro
 
   const HorariosTable({
     required this.horarios,
     required this.onAsignar,
+    required this.onEliminar, // <-- nuevo
     super.key,
   });
 
@@ -42,7 +44,8 @@ class HorariosTable extends StatelessWidget {
                 DataColumn(label: Text('Día')),
                 DataColumn(label: Text('Entrada')),
                 DataColumn(label: Text('Salida')),
-                DataColumn(label: Text('Asignado Por')), // nueva columna
+                DataColumn(label: Text('Asignado Por')),
+                DataColumn(label: Text('Acciones')), // <-- nueva columna
               ],
               rows: horarios
                   .map(
@@ -53,9 +56,14 @@ class HorariosTable extends StatelessWidget {
                         DataCell(Text(h.dia)),
                         DataCell(Text(h.horaEntrada)),
                         DataCell(Text(h.horaSalida)),
+                        DataCell(Text(h.asignadoPor ?? '')),
                         DataCell(
-                          Text(h.asignadoPor ?? ''),
-                        ), // muestra el nombre de la secretaria
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            tooltip: 'Eliminar horario',
+                            onPressed: () => onEliminar(h.idHorario!),
+                          ),
+                        ),
                       ],
                     ),
                   )

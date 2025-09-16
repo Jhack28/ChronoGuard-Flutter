@@ -18,6 +18,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
   List<Empleado> empleados = [];
   bool loadingEmpleados = true;
   List<Horario> horarios = [];
+  int? filtroEmpleadoId; // <-- nuevo
 
   @override
   void initState() {
@@ -236,6 +237,10 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final horariosFiltrados = filtroEmpleadoId == null
+        ? horarios
+        : horarios.where((h) => h.idUsuario == filtroEmpleadoId).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Secretaria'),
@@ -259,6 +264,37 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Filtro por empleado
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  const Text('Filtrar por empleado:'),
+                  const SizedBox(width: 10),
+                  DropdownButton<int>(
+                    value: filtroEmpleadoId,
+                    hint: const Text('Todos'),
+                    items: [
+                      const DropdownMenuItem<int>(
+                        value: null,
+                        child: Text('Todos'),
+                      ),
+                      ...empleados.map(
+                        (e) => DropdownMenuItem<int>(
+                          value: e.id,
+                          child: Text(e.nombre),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      setState(() {
+                        filtroEmpleadoId = v;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
             EmpleadosTable(
               empleados: empleados,
               loading: loadingEmpleados,
@@ -293,8 +329,38 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
             ),
 
             HorariosTable(
-              horarios: horarios,
+              horarios: horariosFiltrados,
               onAsignar: _mostrarDialogoAsignarHorario,
+              onEliminar: (idHorario) async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Eliminar horario'),
+                    content: const Text(
+                      '¿Estás seguro de que deseas eliminar este horario?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  final ok = await ApiService.eliminarHorario(idHorario);
+                  if (ok) {
+                    await _cargarHorarios();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Horario eliminado')),
+                    );
+                  }
+                }
+              },
             ),
 
             Padding(
