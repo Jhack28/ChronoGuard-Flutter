@@ -1,10 +1,48 @@
 import 'package:flutter/material.dart';
 import 'Notifi_empleado.dart';
+import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'dart:math';
 
-class EmpleadoHomeScreen extends StatelessWidget {
-  const EmpleadoHomeScreen({super.key});
+class EmpleadoHomeScreen extends StatefulWidget {
+  final int idUsuario;
+  const EmpleadoHomeScreen({required this.idUsuario, super.key});
+
+  @override
+  State<EmpleadoHomeScreen> createState() => _EmpleadoHomeScreenState();
+}
+
+class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
+  Map<String, dynamic>? _stats;
+  Usuario? _usuario;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      // Carga los datos en paralelo
+      final results = await Future.wait([
+        ApiService.fetchEmpleadoStats(widget.idUsuario),
+        ApiService.fetchUsuarioById(widget.idUsuario),
+      ]);
+
+      setState(() {
+        _stats = results[0] as Map<String, dynamic>;
+        _usuario = results[1] as Usuario;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cargar datos: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +76,19 @@ class EmpleadoHomeScreen extends StatelessWidget {
       ),
     ],
   ),
+  actions: [
+    IconButton(
+      icon: Icon(Icons.notifications, color: Colors.white),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NotificacionesEmpleado(idUsuario: widget.idUsuario),
+          ),
+        );
+      },
+    ),
+  ],
 ),
 
 
@@ -73,9 +124,16 @@ class EmpleadoHomeScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatCard(Icons.check_circle, "Asistencias", "25"),
-            _buildStatCard(Icons.pending_actions, "Permisos", "3"),
-            _buildStatCard(Icons.timer_off, "Retrasos", "1"),
+            _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : _buildStatCard(Icons.check_circle, "Asistencias",
+                    _stats?['asistencias']?.toString() ?? '0'),
+            _isLoading
+                ? const SizedBox.shrink()
+                : _buildStatCard(Icons.pending_actions, "Permisos", _stats?['permisos']?.toString() ?? '0'),
+            _isLoading
+                ? const SizedBox.shrink()
+                : _buildStatCard(Icons.timer_off, "Retrasos", _stats?['retrasos']?.toString() ?? '0'),
           ],
         ),
       ),
@@ -134,28 +192,12 @@ class EmpleadoHomeScreen extends StatelessWidget {
 
       // NAV BOTTOM
       bottomNavigationBar: BottomAppBar(
-        color: Colors.teal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NotificacionesEmpleado(idUsuario: 1),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.notifications, color: Colors.white),
-            ),
-            IconButton(
-              onPressed: () {
-                print("Configuración");
-              },
-              icon: const Icon(Icons.settings, color: Colors.white),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: const Text(
+            '© 2024 ChronoGuard. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );
@@ -347,8 +389,8 @@ class EmpleadoHomeScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               onPressed: () async {
                 final permisoData = {
-                  'ID_Usuario': 1,
-                  'id_departamento': 1,
+                  'ID_Usuario': widget.idUsuario,
+                  'id_departamento': _usuario?.idDepartamento,
                   'tipo': tipoPermiso,
                   'mensaje': descripcionCtrl.text,
                   'Fecha_Solicitud':
@@ -363,7 +405,7 @@ class EmpleadoHomeScreen extends StatelessWidget {
                       await ApiService.crearPermiso(permisoData);
 
                   await ApiService.crearNotificacionEmpleado({
-                    'ID_Usuario': 1,
+                    'ID_Usuario': widget.idUsuario,
                     'ID_EstadoPermiso': 1,
                     'Mensaje':
                         'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
@@ -375,10 +417,10 @@ class EmpleadoHomeScreen extends StatelessWidget {
                   await ApiService.crearNotificacionAdmin({
                     'Fecha_Solicitud':
                         DateTime.now().toIso8601String().substring(0, 10),
-                    'ID_Usuario': 1,
+                    'ID_Usuario': widget.idUsuario,
                     'ID_tipoPermiso': idTipoPermiso,
                     'tipo': tipoPermiso,
-                    'Correo': 'empleado@correo.com',
+                    'Correo': _usuario?.email,
                   });
 
                   Navigator.pop(context);

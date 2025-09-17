@@ -9,7 +9,7 @@ class ApiService {
   // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.78:3000',
+    defaultValue: 'http://192.168.10.23:3000',
   );
 
   /// Obtener empleados desde la BD
@@ -301,6 +301,17 @@ class ApiService {
     }
   }
 
+  static Future<Usuario> fetchUsuarioById(int id) async {
+    final response = await http.get(Uri.parse("$baseUrl/usuario/$id"));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return Usuario.fromJson(data);
+    } else {
+      throw Exception("Error al obtener usuario: ${response.body}");
+    }
+  }
+
   // Obtener notificaciones del empleado
   static Future<List<dynamic>> fetchNotificaciones(int idUsuario) async {
     final res = await http.get(Uri.parse('$baseUrl/notificaciones/$idUsuario'));
@@ -406,5 +417,14 @@ class ApiService {
     throw Exception(
       'No se pudo activar empleado. Última respuesta: ${lastResp?.statusCode ?? 'sin respuesta'} ${lastResp?.body ?? ''}',
     );
+  }
+
+  static Future<Map<String, dynamic>> fetchEmpleadoStats(int idUsuario) async {
+    final response = await http.get(Uri.parse('$baseUrl/empleado/stats/$idUsuario'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Error al obtener estadísticas del empleado');
+    }
   }
 }

@@ -3,6 +3,7 @@ import 'screens/home_screen.dart';
 import 'screens/admin_home_screen.dart';
 import 'screens/secretaria_home_screen.dart';
 import 'screens/empleado_home_screen.dart';
+import 'screens/admin_stats_screen.dart'; // Importar la pantalla de estadísticas
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/adminHome': (context) => const AdminHomeScreen(),
         //'/secrethome': (context) => const SecretariaHomeScreen(),
-        '/empleadoHome': (context) => const EmpleadoHomeScreen(), // 👈 aquí va tu pantalla de empleado
+        // '/empleadoHome': (context) => const EmpleadoHomeScreen(), // Se navega con MaterialPageRoute
+        '/adminStats': (context) => const AdminStatsScreen(), // Añadir la ruta
       },
     );
   }

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart'; // <-- agregado
 import 'secretaria_home_screen.dart'; // <-- Importa la pantalla de inicio de secretaria
+import 'empleado_home_screen.dart'; // <-- Importa la pantalla de inicio de empleado
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -239,7 +240,12 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         } else if (idRol == '3') {
-          Navigator.pushReplacementNamed(context, '/empleadoHome');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EmpleadoHomeScreen(idUsuario: idUsuario),
+            ),
+          );
         } else {
           Navigator.pushReplacementNamed(context, '/home');
         }

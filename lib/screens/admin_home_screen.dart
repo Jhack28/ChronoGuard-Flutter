@@ -430,7 +430,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     onChanged: (v) => setState(() => _showOnlyInactivos = v),
                   ),
                   const Spacer(),
-                  // BOTÓN "Agregar Empleado" eliminado de aquí (queda dentro de la tabla)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/adminStats');
+                    },
+                    icon: const Icon(Icons.bar_chart),
+                    label: const Text('Estadísticas'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                  ),
                 ],
               ),
             ),
