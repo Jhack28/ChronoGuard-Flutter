@@ -5,6 +5,7 @@ import '../services/api_service.dart'; // <-- agregado
 import 'secretaria_home_screen.dart'; // <-- Importa la pantalla de inicio de secretaria
 import 'empleado_home_screen.dart'; // <-- Importa la pantalla de inicio de empleado
 
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -23,7 +24,7 @@ class _HomeState extends State<Home> {
         // Fondo gradiente parecido a header en CSS
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.teal, Colors.lightBlueAccent],
+            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -58,8 +59,8 @@ class _HomeState extends State<Home> {
                         ),
                         IconButton(
                           icon: Icon(
-                            Icons.login,
-                            color: Colors.white,
+                            Icons.manage_accounts,
+                            color: const Color.fromARGB(255, 0, 0, 0),
                             size: 30,
                           ),
                           onPressed: () {
@@ -136,6 +137,19 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
+
+      // Añado BottomAppBar con el texto de derechos reservados
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.teal,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
+            '© 2024 ChronoGuard. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
     );
   }
 
@@ -161,7 +175,7 @@ class _HomeState extends State<Home> {
       child: Column(
         children: [
           Image.asset(imagePath, width: 250, height: 150, fit: BoxFit.cover),
-          SizedBox(height: 10),
+          SizedBox(height: 20),
           Text(
             title,
             style: TextStyle(
@@ -182,7 +196,6 @@ class _HomeState extends State<Home> {
     );
   }
 }
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -260,19 +273,22 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Iniciar Sesión")),
+      appBar: AppBar(
+        title: Text("Iniciar Sesión"),
+        backgroundColor: const Color.fromARGB(255, 0, 207, 187),
+      ),
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.teal, Colors.lightBlueAccent],
+            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(130.0),
             child: Form(
               key: _formKey,
               child: ListView(

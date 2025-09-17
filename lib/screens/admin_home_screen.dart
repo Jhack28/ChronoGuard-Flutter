@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/Horarios.dart';
 import '../models/usuario.dart';
-import '../services/api_service.dart'; // Para obtener/guardar datos en la BD
+import '../services/api_service.dart';
 import '../widgets/admin_table.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -15,8 +15,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   List<Usuario> usuarios = [];
   bool loadingUsuarios = true;
   List<Horario> horarios = [];
-  
-  // Por defecto mostramos solo activos en el panel; el switch mostrará los inactivos
   bool _showOnlyInactivos = false;
 
   final _formKey = GlobalKey<FormState>();
@@ -195,11 +193,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             TextFormField(
               controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
+              decoration: const InputDecoration(labelText: 'Contraseña temporal'),
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
               validator: (value) => _isEditing
-                  ? null // al editar, la contraseña puede quedar vacía
+                  ? null
                   : (value == null || value.isEmpty
                         ? 'Ingrese una contraseña'
                         : null),
@@ -219,7 +217,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 'Empleado':
         return 3;
       default:
-        return 3; // Por defecto Empleado
+        return 3;
     }
   }
 
@@ -394,7 +392,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Si _showOnlyInactivos == true mostramos solo inactivos, si es false mostramos solo activos
     final usuariosFiltrados = _showOnlyInactivos
         ? usuarios.where((u) => !_usuarioEsActivo(u)).toList()
         : usuarios.where((u) => _usuarioEsActivo(u)).toList();
@@ -402,7 +399,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
-        backgroundColor: const Color.fromARGB(197, 3, 19, 110),
+        backgroundColor: const Color.fromARGB(255, 0, 207, 187),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -416,7 +413,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.lightBlueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
           children: [
             Padding(
@@ -442,25 +446,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ],
               ),
             ),
+            // La tabla se ajusta a su contenido. No uses Expanded aquí.
             AdminTable(
-              usuarios: usuariosFiltrados, // actualizado (antes: usuario:)
+              usuarios: usuariosFiltrados,
               loading: loadingUsuarios,
               onEditar: (emp) => _abrirModalEditar(emp),
               onEliminar: (id) => _eliminarEmpleado(id),
-              onEliminarPermanente: (id) =>
-                  _eliminarPermanenteEmpleado(id), // nuevo
-              onActivar: (id) => _activarEmpleado(id), // nuevo
+              onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
+              onActivar: (id) => _activarEmpleado(id),
               onAgregar: _abrirModalAgregar,
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomAppBar(
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: const Text(
+        color: Colors.teal,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
             '© 2024 ChronoGuard. Todos los derechos reservados.',
             textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
           ),
         ),
       ),
