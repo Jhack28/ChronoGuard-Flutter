@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://10.159.126.7:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://172.20.203.7:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '10.159.126.7'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '172.20.203.7'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -253,6 +253,48 @@ app.get('/empleado/lista', (req, res) => {
   );
 });
 
+/**
+ * @swagger
+ * /usuario/{id}:
+ *   get:
+ *     summary: Obtiene los datos de un usuario específico
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Datos del usuario
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error interno
+ */
+app.get('/usuario/:id', (req, res) => {
+  const { id } = req.params;
+  db.query(
+    `SELECT 
+      u.ID_Usuario AS id, u.Nombre AS nombre, u.Email AS email, r.tipo AS rol, 
+      d.tipo AS departamento, u.ID_Departamento as id_departamento,
+      u.Numero_de_Documento AS documento, 
+      CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 'Activo' ELSE 'Inactivo' END AS estado,
+      CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 1 ELSE 0 END AS activo
+    FROM Usuarios u
+    LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
+    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento
+    WHERE u.ID_Usuario = ?`,
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
+      res.json(results[0]);
+    }
+  );
+});
+
 // Crear empleado (hashea password con MD5)
 /**
  * @swagger
@@ -295,7 +337,7 @@ app.post('/admin', (req, res) => {
 
   db.query(
     `INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, ID_Departamento, Estado) 
-     VALUES (?, ?, ?, ?, ?, ?, 'Activo')`,
+    VALUES (?, ?, ?, ?, ?, ?, 'Activo')`,
     [nombre, email, passwordMd5, idRol, numero_de_documento, idDepartamento],
     (err, result) => {
       if (err) {
@@ -350,8 +392,8 @@ app.put('/usuarios/:id', (req, res) => {
 
   db.query(
     `UPDATE Usuarios 
-     SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
-     WHERE ID_Usuario = ?`,
+    SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+    WHERE ID_Usuario = ?`,
     [nombre, email, idRol, idDepartamento, numero_de_documento, id],
     (err) => {
       if (err) {
@@ -545,7 +587,34 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
 });
 
 
-// --- NUEVOS ENDPOINTS para asistencias ---
+/**
+ * @swagger
+ * /horarios/registrar:
+ *   post:
+ *     summary: Registrar un nuevo horario para un empleado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *               Dia:
+ *                 type: string
+ *               Hora_Entrada:
+ *                 type: string
+ *               Hora_Salida:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Horario registrado exitosamente
+ *       400:
+ *         description: Datos inválidos o faltantes
+ *       500:
+ *         description: Error interno del servidor
+ */
 // Registrar asistencia
 /**
  * @swagger
@@ -575,12 +644,30 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
  *       201:
  *         description: Asistencia registrada
  */
-// Registrar horario
+app.post('/asistencia/registrar', (req, res) => {
+  const { id, nombre, entrada, salida, estado } = req.body;
+
+  // Simple validación para asegurar que la fecha/hora es válida o null
+  const entradaVal = entrada ? new Date(entrada).toISOString().slice(0, 19).replace('T', ' ') : null;
+  const salidaVal = salida ? new Date(salida).toISOString().slice(0, 19).replace('T', ' ') : null;
+
+  db.query(
+    `INSERT INTO Asistencias (ID_Usuario, Nombre, Entrada, Salida, Estado) VALUES (?, ?, ?, ?, ?)`,
+    [id, nombre || null, entradaVal, salidaVal, estado || null],
+    (err, result) => {
+      if (err) {
+        console.error('Error al insertar asistencia:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(201).json({ message: 'Asistencia registrada', id: result.insertId });
+    }
+  );
+});
+
 app.post("/horarios/registrar", (req, res) => {
   try {
     const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
 
-    // Tomar secretaria desde token o header
     const asignadoPor = req.user?.id || req.headers["x-usuario-id"];
 
     if (!ID_Usuario || !Dia || !Hora_Entrada || !Hora_Salida) {
@@ -593,7 +680,6 @@ app.post("/horarios/registrar", (req, res) => {
       return res.status(401).json({ error: "No autorizado: secretaria no logueada" });
     }
 
-    // Normalizar valores
     const diaNorm = normalizeDia(Dia);
     if (!diaNorm) {
       return res.status(400).json({
@@ -609,7 +695,6 @@ app.post("/horarios/registrar", (req, res) => {
         .json({ error: "Formato inválido de horas. Use HH:mm o HH:mm:ss" });
     }
 
-    // Query SQL
     const sql = `
       INSERT INTO Horarios (ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Asignado_Por)
       VALUES (?, ?, ?, ?, ?)
@@ -630,6 +715,114 @@ app.post("/horarios/registrar", (req, res) => {
     console.error("Error en /horarios/registrar:", err);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
+});
+
+// Listar asistencias
+/**
+ * @swagger
+ * /asistencia/lista:
+ *   get:
+ *     summary: Lista de asistencias registradas
+ *     responses:
+ *       200:
+ *         description: Lista de asistencias
+ */
+app.get('/asistencia/lista', (req, res) => {
+  db.query(
+    `SELECT 
+      a.ID_Asistencia AS id,
+      a.ID_Usuario AS idUsuario,
+      COALESCE(u.Nombre, a.Nombre) AS nombre,
+      DATE_FORMAT(a.Entrada, '%Y-%m-%dT%H:%i:%s') AS entrada,
+      DATE_FORMAT(a.Salida, '%Y-%m-%dT%H:%i:%s') AS salida,
+      a.Estado AS estado
+      FROM Asistencias a
+      LEFT JOIN Usuarios u ON u.ID_Usuario = a.ID_Usuario
+      ORDER BY a.ID_Asistencia DESC`,
+    (err, results) => {
+      if (err) {
+        console.error('Error al obtener asistencias:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log('GET /asistencia/lista ->', results.length, 'registros');
+      res.json(results);
+    }
+  );
+});
+
+// Ejemplo para Node.js/Express
+app.get('/notificaciones/:idUsuario', (req, res) => {
+  const idUsuario = req.params.idUsuario;
+  db.query(
+    'SELECT * FROM Notificaciones WHERE ID_Usuario = ?',
+    [idUsuario],
+    (err, results) => {
+      if (err) {
+        console.error('Error al obtener notificaciones:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+    }
+  );
+
+});
+
+app.get('/admin/estadisticas/:idUsuario', (req, res) => {
+  const idUsuario = req.params.idUsuario;
+  db.query(
+    'SELECT Estado FROM Notificaciones WHERE ID_Usuario = ?',
+    [idUsuario],
+    (err, results) => {
+      if (err) {
+        console.error('Error al obtener estadísticas:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+    }
+  );
+});
+
+/**
+ * @swagger
+ * /empleado/{id}/estadisticas:
+ *   get:
+ *     summary: Obtiene estadísticas para la pantalla de inicio de un empleado.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario empleado
+ *     responses:
+ *       200:
+ *         description: Estadísticas del empleado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 asistencias:
+ *                   type: integer
+ *                 permisos:
+ *                   type: integer
+ *                 retrasos:
+ *                   type: integer
+ *       500:
+ *         description: Error interno
+ */
+app.get('/empleado/:id/estadisticas', (req, res) => {
+  const { id } = req.params;
+  const sql = `
+    SELECT
+      (SELECT COUNT(*) FROM Asistencias WHERE ID_Usuario = ?) AS asistencias,
+      (SELECT COUNT(*) FROM Notificaciones WHERE ID_Usuario = ?) AS permisos,
+      (SELECT COUNT(*) FROM Asistencias WHERE ID_Usuario = ? AND Estado = 'Retraso') AS retrasos
+  `;
+  db.query(sql, [id, id, id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results[0]);
+  });
 });
 
 

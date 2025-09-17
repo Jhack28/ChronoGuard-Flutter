@@ -164,14 +164,14 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
             TextFormField(controller: _numeroDocumentoCtrl, decoration: const InputDecoration(labelText: 'Número de Documento')),
             TextFormField(controller: _nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
             DropdownButtonFormField<String>(
-              value: _rolSeleccionado,
+              initialValue: _rolSeleccionado,
               decoration: const InputDecoration(labelText: 'Rol'),
               items: ['Administrador', 'Secretaria', 'Empleado'].map((rol) => DropdownMenuItem(value: rol, child: Text(rol))).toList(),
               onChanged: (val) => dialogSetState(() => _rolSeleccionado = val),
             ),
             if (_rolSeleccionado == 'Empleado')
               DropdownButtonFormField<String>(
-                value: _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
+                initialValue: _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
                 decoration: const InputDecoration(labelText: 'Departamento'),
                 items: ['Lavado', 'Planchado', 'Secado', 'Transporte'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                 onChanged: (val) => dialogSetState(() => _departamentoCtrl.text = val ?? ''),

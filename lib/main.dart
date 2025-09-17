@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/admin_home_screen.dart';
-import 'screens/secretaria_home_screen.dart';
-import 'screens/empleado_home_screen.dart';
 import 'screens/admin_stats_screen.dart'; // Importar la pantalla de estadísticas
 
 void main() {

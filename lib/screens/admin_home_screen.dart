@@ -18,11 +18,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _showOnlyInactivos = false;
 
   final _formKey = GlobalKey<FormState>();
-  final _numeroDocumentoCtrl = TextEditingController();
-  final _nombreCtrl = TextEditingController();
-  final _departamentoCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final TextEditingController _numeroDocumentoCtrl = TextEditingController();
+  final TextEditingController _nombreCtrl = TextEditingController();
+  final TextEditingController _departamentoCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passwordCtrl = TextEditingController();
   String? _rolSeleccionado;
 
   bool _isEditing = false;
@@ -43,7 +43,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _cargarEmpleados() async {
-    setState(() => loadingUsuarios = true);
+    setState(() {
+      loadingUsuarios = true;
+    });
     try {
       final list = await ApiService.fetchUsuarios();
       setState(() {
@@ -51,10 +53,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         loadingUsuarios = false;
       });
     } catch (e) {
-      setState(() => loadingUsuarios = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error al cargar empleados: $e")));
+      setState(() {
+        loadingUsuarios = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al cargar empleados: $e")),
+      );
     }
   }
 
@@ -95,9 +99,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void _abrirModalEditar(Usuario usuario) {
     _numeroDocumentoCtrl.text = usuario.documento;
     _nombreCtrl.text = usuario.nombre;
-    _departamentoCtrl.text = usuario.rol == "Empleado"
-        ? usuario.departamento
-        : '';
+    _departamentoCtrl.text = usuario.rol == "Empleado" ? usuario.departamento : '';
     _emailCtrl.text = usuario.email;
     _passwordCtrl.clear();
     _rolSeleccionado = usuario.rol;
@@ -140,15 +142,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 labelText: 'Número de Documento',
               ),
               keyboardType: TextInputType.number,
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Ingrese número de documento'
-                  : null,
+              validator: (value) => value == null || value.isEmpty ? 'Ingrese número de documento' : null,
             ),
             TextFormField(
               controller: _nombreCtrl,
               decoration: const InputDecoration(labelText: 'Nombre'),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Ingrese nombre' : null,
+              validator: (value) => value == null || value.isEmpty ? 'Ingrese nombre' : null,
             ),
             DropdownButtonFormField<String>(
               initialValue: _rolSeleccionado,
@@ -168,9 +167,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             if (_rolSeleccionado == 'Empleado')
               DropdownButtonFormField<String>(
-                initialValue: _departamentoCtrl.text.isNotEmpty
-                    ? _departamentoCtrl.text
-                    : null,
+                initialValue: _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
                 decoration: const InputDecoration(labelText: 'Departamento'),
                 items: ['Lavado', 'Planchado', 'Secado', 'Transporte']
                     .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -180,27 +177,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _departamentoCtrl.text = val ?? '';
                   });
                 },
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Seleccione un departamento'
-                    : null,
+                validator: (value) => value == null || value.isEmpty ? 'Seleccione un departamento' : null,
               ),
             TextFormField(
               controller: _emailCtrl,
               decoration: const InputDecoration(labelText: 'Correo'),
               keyboardType: TextInputType.emailAddress,
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Ingrese correo' : null,
+              validator: (value) => value == null || value.isEmpty ? 'Ingrese correo' : null,
             ),
             TextFormField(
               controller: _passwordCtrl,
               decoration: const InputDecoration(labelText: 'Contraseña temporal'),
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
-              validator: (value) => _isEditing
-                  ? null
-                  : (value == null || value.isEmpty
-                        ? 'Ingrese una contraseña'
-                        : null),
+              validator: (value) => _isEditing ? null : (value == null || value.isEmpty ? 'Ingrese una contraseña' : null),
             ),
           ],
         ),
@@ -240,9 +230,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final rolId = getRolId(_rolSeleccionado ?? 'Empleado');
-    final departamentoId = _rolSeleccionado == 'Empleado'
-        ? getDepartamentoId(_departamentoCtrl.text)
-        : null;
+    final departamentoId = _rolSeleccionado == 'Empleado' ? getDepartamentoId(_departamentoCtrl.text) : null;
 
     final empleadoData = {
       'numero_de_documento': _numeroDocumentoCtrl.text,
@@ -265,9 +253,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       Navigator.pop(context);
       _cargarEmpleados();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
     }
   }
 
@@ -295,14 +281,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.inactivarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al inactivar empleado: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al inactivar empleado: $e')));
       }
     }
   }
 
-  // Nuevo: eliminar definitivamente
   Future<void> _eliminarPermanenteEmpleado(int id) async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -330,9 +313,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.eliminarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar empleado: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar empleado: $e')));
       }
     }
   }
@@ -361,9 +342,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.activarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al reactivar empleado: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al reactivar empleado: $e')));
       }
     }
   }
@@ -371,12 +350,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _usuarioEsActivo(Usuario u) {
     try {
       final dyn = u as dynamic;
-      final val =
-          dyn.activo ??
-          dyn.estado ??
-          dyn.isActive ??
-          dyn.estado_usuario ??
-          dyn.estadoUsuario;
+      final val = dyn.activo ?? dyn.estado ?? dyn.isActive ?? dyn.estado_usuario ?? dyn.estadoUsuario;
       if (val == null) return false;
       if (val is bool) return val;
       if (val is num) return val == 1;
@@ -392,9 +366,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final usuariosFiltrados = _showOnlyInactivos
-        ? usuarios.where((u) => !_usuarioEsActivo(u)).toList()
-        : usuarios.where((u) => _usuarioEsActivo(u)).toList();
+    final usuariosFiltrados =
+        _showOnlyInactivos ? usuarios.where((u) => !_usuarioEsActivo(u)).toList() : usuarios.where((u) => _usuarioEsActivo(u)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -440,13 +413,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     },
                     icon: const Icon(Icons.bar_chart),
                     label: const Text('Estadísticas'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
                   ),
                 ],
               ),
             ),
-            // La tabla se ajusta a su contenido. No uses Expanded aquí.
             AdminTable(
               usuarios: usuariosFiltrados,
               loading: loadingUsuarios,
