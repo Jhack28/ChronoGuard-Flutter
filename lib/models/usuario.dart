@@ -7,6 +7,7 @@ class Usuario {
   final String estado;
   final bool activo;
   final String rol; // agregado
+  final int? idDepartamento;
 
   Usuario({
     required this.id,
@@ -17,6 +18,7 @@ class Usuario {
     required this.estado,
     required this.activo,
     required this.rol,
+    this.idDepartamento,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class Usuario {
       estado: json['estado']?.toString() ?? (activoVal ? 'Activo' : 'Inactivo'),
       activo: activoVal,
       rol: json['rol']?.toString() ?? '', // mapeo de rol
+      idDepartamento: json['id_departamento'],
     );
   }
 }

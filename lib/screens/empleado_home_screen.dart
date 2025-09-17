@@ -1,10 +1,48 @@
 import 'package:flutter/material.dart';
 import 'Notifi_empleado.dart';
+import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'dart:math';
 
-class EmpleadoHomeScreen extends StatelessWidget {
-  const EmpleadoHomeScreen({super.key});
+class EmpleadoHomeScreen extends StatefulWidget {
+  final int idUsuario;
+  const EmpleadoHomeScreen({required this.idUsuario, super.key});
+
+  @override
+  State<EmpleadoHomeScreen> createState() => _EmpleadoHomeScreenState();
+}
+
+class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
+  Map<String, dynamic>? _stats;
+  Usuario? _usuario;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      // Carga los datos en paralelo
+      final results = await Future.wait([
+        ApiService.fetchEmpleadoStats(widget.idUsuario),
+        ApiService.fetchUsuarioById(widget.idUsuario),
+      ]);
+
+      setState(() {
+        _stats = results[0] as Map<String, dynamic>;
+        _usuario = results[1] as Usuario;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cargar datos: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -341,8 +379,8 @@ class EmpleadoHomeScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               onPressed: () async {
                 final permisoData = {
-                  'ID_Usuario': 1,
-                  'id_departamento': 1,
+                  'ID_Usuario': widget.idUsuario,
+                  'id_departamento': _usuario?.idDepartamento,
                   'tipo': tipoPermiso,
                   'mensaje': descripcionCtrl.text,
                   'Fecha_Solicitud':
@@ -355,7 +393,7 @@ class EmpleadoHomeScreen extends StatelessWidget {
                   final idTipoPermiso =
                       await ApiService.crearPermiso(permisoData);
                   await ApiService.crearNotificacionEmpleado({
-                    'ID_Usuario': 1,
+                    'ID_Usuario': widget.idUsuario,
                     'ID_EstadoPermiso': 1,
                     'Mensaje':
                         'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
@@ -366,10 +404,10 @@ class EmpleadoHomeScreen extends StatelessWidget {
                   await ApiService.crearNotificacionAdmin({
                     'Fecha_Solicitud':
                         DateTime.now().toIso8601String().substring(0, 10),
-                    'ID_Usuario': 1,
+                    'ID_Usuario': widget.idUsuario,
                     'ID_tipoPermiso': idTipoPermiso,
                     'tipo': tipoPermiso,
-                    'Correo': 'empleado@correo.com',
+                    'Correo': _usuario?.email,
                   });
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
