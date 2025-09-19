@@ -3,6 +3,7 @@ import '../models/Horarios.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../widgets/admin_table.dart';
+import '../widgets/admin_horarios_table.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -16,6 +17,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool loadingUsuarios = true;
   List<Horario> horarios = [];
   bool _showOnlyInactivos = false;
+  bool loadingHorarios = true;
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _numeroDocumentoCtrl = TextEditingController();
@@ -40,6 +42,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     _cargarEmpleados();
+    _cargarHorarios();
   }
 
   Future<void> _cargarEmpleados() async {
@@ -56,9 +59,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         loadingUsuarios = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al cargar empleados: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al cargar empleados: $e")));
+    }
+  }
+
+  Future<void> _cargarHorarios() async {
+    setState(() => loadingHorarios = true);
+    try {
+      final lista = await ApiService.obtenerHorarios();
+      setState(() {
+        horarios = lista;
+        loadingHorarios = false;
+      });
+    } catch (e) {
+      setState(() => loadingHorarios = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al cargar horarios: $e')));
     }
   }
 
@@ -142,7 +160,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 labelText: 'Número de Documento',
               ),
               keyboardType: TextInputType.number,
-              validator: (value) => value == null || value.isEmpty ? 'Ingrese número de documento' : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Ingrese número de documento' : null,
             ),
             TextFormField(
               controller: _nombreCtrl,
@@ -167,7 +186,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             if (_rolSeleccionado == 'Empleado')
               DropdownButtonFormField<String>(
-                initialValue: _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
+                initialValue:
+                    _departamentoCtrl.text.isNotEmpty ? _departamentoCtrl.text : null,
                 decoration: const InputDecoration(labelText: 'Departamento'),
                 items: ['Lavado', 'Planchado', 'Secado', 'Transporte']
                     .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -177,20 +197,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _departamentoCtrl.text = val ?? '';
                   });
                 },
-                validator: (value) => value == null || value.isEmpty ? 'Seleccione un departamento' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Seleccione un departamento' : null,
               ),
             TextFormField(
               controller: _emailCtrl,
               decoration: const InputDecoration(labelText: 'Correo'),
               keyboardType: TextInputType.emailAddress,
-              validator: (value) => value == null || value.isEmpty ? 'Ingrese correo' : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Ingrese correo' : null,
             ),
             TextFormField(
               controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: 'Contraseña temporal'),
+              decoration: const InputDecoration(
+                labelText: 'Contraseña temporal',
+              ),
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
-              validator: (value) => _isEditing ? null : (value == null || value.isEmpty ? 'Ingrese una contraseña' : null),
+              validator: (value) => _isEditing
+                  ? null
+                  : (value == null || value.isEmpty ? 'Ingrese una contraseña' : null),
             ),
           ],
         ),
@@ -253,7 +279,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       Navigator.pop(context);
       _cargarEmpleados();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
     }
   }
 
@@ -281,7 +309,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.inactivarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al inactivar empleado: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al inactivar empleado: $e')),
+        );
       }
     }
   }
@@ -291,9 +321,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Eliminar definitivamente'),
-        content: const Text(
-          '¿Eliminar definitivamente este empleado? Esta acción NO se puede deshacer.',
-        ),
+        content: const Text('¿Eliminar definitivamente este empleado? Esta acción NO se puede deshacer.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -313,7 +341,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.eliminarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar empleado: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar empleado: $e')),
+        );
       }
     }
   }
@@ -342,7 +372,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await ApiService.activarEmpleado(id);
         _cargarEmpleados();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al reactivar empleado: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al reactivar empleado: $e')),
+        );
       }
     }
   }
@@ -366,8 +398,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final usuariosFiltrados =
-        _showOnlyInactivos ? usuarios.where((u) => !_usuarioEsActivo(u)).toList() : usuarios.where((u) => _usuarioEsActivo(u)).toList();
+    final usuariosFiltrados = _showOnlyInactivos
+        ? usuarios.where((u) => !_usuarioEsActivo(u)).toList()
+        : usuarios.where((u) => _usuarioEsActivo(u)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -375,9 +408,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         backgroundColor: const Color.fromARGB(255, 0, 207, 187),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarEmpleados,
-          ),
+          icon: const Icon(Icons.refresh),
+          onPressed: () {
+            _cargarEmpleados();
+            _cargarHorarios();   // <-- Añade esta línea para recargar horarios también
+            },
+        ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -394,40 +430,65 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  const Text('Mostrar solo inactivos'),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: _showOnlyInactivos,
-                    onChanged: (v) => setState(() => _showOnlyInactivos = v),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20), // espacio para BottomAppBar
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            const Text('Mostrar solo inactivos'),
+                            const SizedBox(width: 8),
+                            Switch(
+                              value: _showOnlyInactivos,
+                              onChanged: (v) => setState(() => _showOnlyInactivos = v),
+                            ),
+                            const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/adminStats');
+                              },
+                              icon: const Icon(Icons.bar_chart),
+                              label: const Text('Estadísticas'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AdminTable(
+                        usuarios: usuariosFiltrados,
+                        loading: loadingUsuarios,
+                        onEditar: (emp) => _abrirModalEditar(emp),
+                        onEliminar: (id) => _eliminarEmpleado(id),
+                        onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
+                        onActivar: (id) => _activarEmpleado(id),
+                        onAgregar: _abrirModalAgregar,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(),
+                        child: AdminHorariosTable(
+                          horarios: horarios,
+                          loading: loadingHorarios,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/adminStats');
-                    },
-                    icon: const Icon(Icons.bar_chart),
-                    label: const Text('Estadísticas'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
-                  ),
-                ],
+                ),
               ),
-            ),
-            AdminTable(
-              usuarios: usuariosFiltrados,
-              loading: loadingUsuarios,
-              onEditar: (emp) => _abrirModalEditar(emp),
-              onEliminar: (id) => _eliminarEmpleado(id),
-              onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
-              onActivar: (id) => _activarEmpleado(id),
-              onAgregar: _abrirModalAgregar,
-            ),
-          ],
+            );
+          },
         ),
       ),
       bottomNavigationBar: BottomAppBar(

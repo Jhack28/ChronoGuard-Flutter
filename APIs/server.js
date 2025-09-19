@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://172.20.203.7:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://192.168.10.14:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '172.20.203.7'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '192.168.10.14'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -160,9 +160,9 @@ app.post('/login', (req, res) => {
   }
 
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
-  
+
   db.query(
-    'SELECT ID_Usuario, ID_Rol FROM Usuarios WHERE Email = ? AND Password = ?',
+    'SELECT ID_Usuario, ID_Rol, Estado FROM Usuarios WHERE Email = ? AND Password = ? AND Estado = "Activo"',
     [email, passwordMd5],
     (err, results) => {
       if (err) {
@@ -173,14 +173,17 @@ app.post('/login', (req, res) => {
         return res.json({
           success: true,
           ID_Rol: results[0].ID_Rol,
-          ID_Usuario: results[0].ID_Usuario // <-- Agrega esto
+          ID_Usuario: results[0].ID_Usuario,
+          Estado: results[0].Estado
         });
       } else {
-        return res.json({ success: false, message: 'Credenciales inválidas' });
+        return res.json({ success: false, message: 'El Usuario esta inactivo contacte con su superior' });
       }
     }
   );
 });
+
+
 
 // LISTA usuarios (admin)
 /**
