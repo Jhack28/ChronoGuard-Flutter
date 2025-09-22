@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://192.168.10.14:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://10.1.195.99:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '192.168.10.14'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '10.1.195.99'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -160,30 +160,30 @@ app.post('/login', (req, res) => {
   }
 
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
-
+  
   db.query(
-    'SELECT ID_Usuario, ID_Rol, Estado FROM Usuarios WHERE Email = ? AND Password = ? AND Estado = "Activo"',
-    [email, passwordMd5],
-    (err, results) => {
-      if (err) {
-        console.error('Error en consulta SQL:', err);
-        return res.status(500).json({ success: false, error: err.message });
-      }
-      if (results.length > 0) {
-        return res.json({
-          success: true,
-          ID_Rol: results[0].ID_Rol,
-          ID_Usuario: results[0].ID_Usuario,
-          Estado: results[0].Estado
-        });
-      } else {
-        return res.json({ success: false, message: 'El Usuario esta inactivo contacte con su superior' });
-      }
+  'SELECT ID_Usuario, ID_Rol, ID_Departamento FROM Usuarios WHERE Email = ? AND Password = ?',
+  [email, passwordMd5],
+  (err, results) => {
+    if (err) {
+      console.error('Error en consulta SQL:', err);
+      return res.status(500).json({ success: false, error: err.message });
     }
-  );
+    if (results.length > 0) {
+      console.log("📌 Resultado SQL login:", results[0]);
+
+      return res.json({
+        success: true,
+        ID_Usuario: results[0].ID_Usuario,
+        ID_Rol: results[0].ID_Rol,
+        id_departamento: results[0].ID_Departamento, // <-- aquí estaba faltando
+      });
+    } else {
+      return res.json({ success: false, message: 'Credenciales inválidas' });
+    }
+  }
+);
 });
-
-
 
 // LISTA usuarios (admin)
 /**
@@ -936,4 +936,181 @@ app.delete("/horarios/:id", (req, res) => {
     }
     res.status(200).json({ success: true, message: "Horario eliminado correctamente" });
   });
+});
+// ================== ENDPOINT: CREAR PERMISO ==================
+app.post('/permisos', async (req, res) => {
+  try {
+    console.log("Datos recibidos en /permisos:", req.body); // 👈
+
+    const {
+      ID_Usuario,
+      id_departamento,
+      tipo,
+      mensaje,
+      Fecha_inicio,
+      Fecha_fin
+    } = req.body;
+
+    // 🔍 Debug: mostrar cada campo recibido
+    console.log("✅ ID_Usuario:", ID_Usuario);
+    console.log("✅ id_departamento:", id_departamento);
+    console.log("✅ tipo:", tipo);
+    console.log("✅ mensaje:", mensaje);
+    console.log("✅ Fecha_inicio:", Fecha_inicio);
+    console.log("✅ Fecha_fin:", Fecha_fin);
+
+    if (!ID_Usuario || !id_departamento || !tipo) {
+      console.warn("⚠️ Faltan datos obligatorios:", req.body);
+      return res.status(400).json({ error: 'Faltan datos obligatorios', dataRecibida: req.body });
+    }
+    
+     const fechaSolicitud = Fecha_Solicitud ? Fecha_Solicitud : new Date();
+
+    // 1️⃣ Guardar en TipoPermiso
+    const [result] = await db.query(
+      `INSERT INTO TipoPermiso 
+       (ID_Usuario, ID_Departamento, Tipo, Mensaje, Fecha_Solicitud, Fecha_Inicio, Fecha_Fin) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [ID_Usuario, id_departamento, tipo, mensaje, fechaSolicitud, Fecha_inicio, Fecha_fin]
+    );
+
+    const idPermiso = result.insertId;
+
+    // 2️⃣ Guardar notificación para Admin/Secretaria
+    await db.query(
+      `INSERT INTO Notificaciones_ADMIN (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
+       VALUES (?, ?, ?, 'Pendiente', NOW())`,
+      [idPermiso, ID_Usuario, `Nueva solicitud de permiso: ${tipo}`]
+    );
+
+    res.status(201).json({ message: 'Solicitud creada con éxito', idPermiso });
+  } catch (error) {
+    console.error('Error al crear solicitud:', error);
+    res.status(500).json({ error: 'Error al crear la solicitud' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ================== ENDPOINT: OBTENER TODAS LAS SOLICITUDES ==================
+app.get('/permisos', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
+      FROM TipoPermiso tp
+      JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      ORDER BY tp.Fecha_Solicitud DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener permisos:', error);
+    res.status(500).json({ error: 'Error al obtener permisos' });
+  }
+});
+
+
+// ================== ENDPOINT: OBTENER PERMISOS POR USUARIO ==================
+app.get('/permisos/usuario/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query(`
+      SELECT tp.*, d.Nombre_Departamento
+      FROM TipoPermiso tp
+      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      WHERE tp.ID_Usuario = ?
+      ORDER BY tp.Fecha_Solicitud DESC
+    `, [id]);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener permisos del usuario:', error);
+    res.status(500).json({ error: 'Error al obtener permisos del usuario' });
+  }
+});
+
+
+// ================== ENDPOINT: OBTENER PERMISOS PENDIENTES ==================
+app.get('/permisos/pendientes', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
+      FROM TipoPermiso tp
+      JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      WHERE tp.Estado = 'Pendiente'
+      ORDER BY tp.Fecha_Solicitud DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener permisos pendientes:', error);
+    res.status(500).json({ error: 'Error al obtener permisos pendientes' });
+  }
+});
+
+
+// ================== ENDPOINT: ACTUALIZAR ESTADO DEL PERMISO(Aprobado/Rechazado)==================
+app.put('/permisos/:id/estado', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nuevoEstado, ID_Admin } = req.body;
+
+    if (!nuevoEstado || !['Aprobado', 'Rechazado'].includes(nuevoEstado)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+
+    // 1️⃣ Actualizar estado
+    await db.query(
+      `UPDATE TipoPermiso SET Estado = ? WHERE ID_tipoPermiso = ?`,
+      [nuevoEstado, id]
+    );
+
+    // 2️⃣ Guardar notificación al empleado
+    await db.query(
+      `INSERT INTO Notificaciones (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
+       SELECT ?, tp.ID_Usuario, CONCAT('Tu solicitud ha sido ', ?) , 'Leída', NOW()
+       FROM TipoPermiso tp WHERE tp.ID_tipoPermiso = ?`,
+      [id, nuevoEstado, id]
+    );
+
+    res.json({ message: `Solicitud ${nuevoEstado} correctamente` });
+  } catch (error) {
+    console.error('Error al actualizar estado de permiso:', error);
+    res.status(500).json({ error: 'Error al actualizar estado de permiso' });
+  }
+});
+
+
+
+// ================== ENDPOINT: ELIMINAR PERMISO ==================
+app.delete('/permisos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query(`DELETE FROM TipoPermiso WHERE ID_tipoPermiso = ?`, [id]);
+    res.json({ message: 'Permiso eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar permiso:', error);
+    res.status(500).json({ error: 'Error al eliminar permiso' });
+  }
 });

@@ -9,7 +9,7 @@ class ApiService {
   // flutter build apk --release --dart-define=API_BASE_URL=http://192.168.10.150:3000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.10.14:3000',
+    defaultValue: 'http://10.1.195.99:3000',
   );
 
   /// Obtener empleados desde la BD
@@ -321,18 +321,58 @@ class ApiService {
     throw Exception('Error al cargar notificaciones');
   }
 
-  // Crear permiso
-  static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/permisos'),
-      body: jsonEncode(permisoData),
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      return jsonDecode(res.body)['ID_tipoPermiso'];
-    }
-    throw Exception('Error al crear permiso');
+
+  static Future<bool> checkConnection() async {
+  try {
+    final response = await http.head(Uri.parse(baseUrl));
+    return response.statusCode == 200;
+  } catch (e) {
+    print("❌ Error al verificar conexión: $e");
+    return false;
   }
+}
+
+  // Crear permiso
+ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
+  final res = await http.post(
+    Uri.parse('$baseUrl'),
+    body: jsonEncode(permisoData),
+    headers: {'Content-Type': 'application/json'},
+  );
+
+  if (res.statusCode == 200 || res.statusCode == 201) {
+    return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
+  }
+  throw Exception('Error al crear permiso: ${res.body}');
+}
+
+
+  Future<int> solicitarPermiso({
+  required int idUsuario,
+  required int idDepartamento,
+  required String tipo,
+  required String mensaje,
+  required DateTime fechaInicio,
+  required DateTime fechaFin,
+}) async {
+  final permiso = {
+    "ID_Usuario": idUsuario,
+    "ID_Departamento": idDepartamento,
+    "tipo": tipo,
+    "mensaje": mensaje,
+    "Fecha_inicio": fechaInicio.toIso8601String().split('T')[0],
+    "Fecha_fin": fechaFin.toIso8601String().split('T')[0],
+  };
+
+  print("📤 Enviando permiso: $permiso"); // Debug para verificar
+  print("➡️ ID Usuario: $idUsuario");
+  print("➡️ ID Departamento: $idDepartamento"); // 👈 DEBUG
+
+  return await ApiService.crearPermiso(permiso);
+  
+}
+
+
 
   // Crear notificación para empleado
   static Future<void> crearNotificacionEmpleado(
@@ -428,3 +468,6 @@ class ApiService {
     }
   }
 }
+
+
+

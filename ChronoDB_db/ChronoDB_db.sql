@@ -118,7 +118,7 @@ INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Esta
 VALUES ('juan esteban londoño carcajal', 'juanes@correo.com', MD5('admin123'), 1, 222534, 'Activo');
 
 INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('angie', 'angie@correo.com', MD5('secre321'), 2, 2544434, 'inactivo');
+VALUES ('angie', 'eangie@correo.com', MD5('secre321'), 2, 2544434, 'inactivo');
 
 INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
 VALUES ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Activo');

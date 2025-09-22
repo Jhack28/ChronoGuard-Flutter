@@ -23,10 +23,7 @@ class _HomeState extends State<Home> {
         // Fondo gradiente parecido a header en CSS
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 0, 116, 90),
-              Colors.lightBlueAccent,
-            ],
+            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -198,7 +195,6 @@ class _HomeState extends State<Home> {
     );
   }
 }
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -227,7 +223,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (data['success'] == true) {
         return data; // Retorna todo el objeto para usar ID_Usuario y ID_Rol
       }
-      return data; // Return data even if success is false for error handling
     }
     return null;
   }
@@ -241,31 +236,22 @@ class _LoginScreenState extends State<LoginScreen> {
       ).showSnackBar(SnackBar(content: Text('Intentando iniciar sesión...')));
 
       final data = await loginUser(correo, contrasena);
+      
 
-      if (data != null && data['success'] == true) {
+      if (data != null) {
         final idRol = data['ID_Rol'].toString();
         final idUsuario = data['ID_Usuario'];
-        final estado = data['Estado'];
-
-        if (estado != 'Activo') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Usuario inactivo, no puede iniciar sesión'),
-            ),
-          );
-          return;
-        }
 
         if (idRol == '1') {
           Navigator.pushReplacementNamed(context, '/adminHome');
-        } else if (idRol == '2') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  SecretariaHomeScreen(idSecretaria: idUsuario),
-            ),
-          );
+        } else if (idRol == '2') { // Secretaria
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SecretariaHomeScreen(idSecretaria: idUsuario),
+          ),
+        );
+
         } else if (idRol == '3') {
           Navigator.pushReplacement(
             context,
@@ -299,10 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 0, 116, 90),
-              Colors.lightBlueAccent,
-            ],
+            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
