@@ -93,7 +93,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     try {
       final lista = await ApiService.fetchPermisos();
       setState(() {
-        permisos = lista ?? [];
+        permisos = lista;
         loadingPermisos = false;
       });
     } catch (e) {
@@ -173,7 +173,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _formEmpleado(void Function(void Function()) dialogSetState) {
+  Widget   _formEmpleado(void Function(void Function()) dialogSetState) {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
@@ -197,7 +197,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   value == null || value.isEmpty ? 'Ingrese nombre' : null,
             ),
             DropdownButtonFormField<String>(
-              value: _rolSeleccionado,
+              initialValue: _rolSeleccionado,
               decoration: const InputDecoration(labelText: 'Rol'),
               items: ['Administrador', 'Secretaria', 'Empleado']
                   .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))
@@ -214,7 +214,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             if (_rolSeleccionado == 'Empleado')
               DropdownButtonFormField<String>(
-                value: _departamentoCtrl.text.isNotEmpty
+                initialValue: _departamentoCtrl.text.isNotEmpty
                     ? _departamentoCtrl.text
                     : null,
                 decoration: const InputDecoration(labelText: 'Departamento'),
@@ -435,6 +435,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ? usuarios.where((u) => !_usuarioEsActivo(u)).toList()
         : usuarios.where((u) => _usuarioEsActivo(u)).toList();
 
+    BoxDecoration containerDecoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [
+        BoxShadow(
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
+      ],
+    );
+
+    EdgeInsets containerPadding = const EdgeInsets.all(12);
+    EdgeInsets containerMargin = const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
@@ -471,6 +485,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
@@ -498,36 +513,38 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ],
                         ),
                       ),
-                      AdminTable(
-                        usuarios: usuariosFiltrados,
-                        loading: loadingUsuarios,
-                        onEditar: (emp) => _abrirModalEditar(emp),
-                        onEliminar: (id) => _eliminarEmpleado(id),
-                        onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
-                        onActivar: (id) => _activarEmpleado(id),
-                        onAgregar: _abrirModalAgregar,
-                      ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(),
-                        child: AdminHorariosTable(
-                          horarios: horarios,
-                          loading: loadingHorarios,
+                        padding: containerMargin,
+                        child: Container(
+                          decoration: containerDecoration,
+                          padding: containerPadding,
+                          child: AdminTable(
+                            usuarios: usuariosFiltrados,
+                            loading: loadingUsuarios,
+                            onEditar: (emp) => _abrirModalEditar(emp),
+                            onEliminar: (id) => _eliminarEmpleado(id),
+                            onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
+                            onActivar: (id) => _activarEmpleado(id),
+                            onAgregar: _abrirModalAgregar,
+                          ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+                        padding: containerMargin,
                         child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 255, 255, 255),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
-                              BoxShadow(
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
+                          decoration: containerDecoration,
+                          padding: containerPadding,
+                          child: AdminHorariosTable(
+                            horarios: horarios,
+                            loading: loadingHorarios,
                           ),
-                          padding: const EdgeInsets.all(12),
+                        ),
+                      ),
+                      Padding(
+                        padding: containerMargin,
+                        child: Container(
+                          decoration: containerDecoration,
+                          padding: containerPadding,
                           child: loadingPermisos
                               ? const Center(child: CircularProgressIndicator())
                               : AdminPermisosTable(
@@ -535,16 +552,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   onRefrescar: _cargarPermisos,
                                 ),
                         ),
-                      ),
-                      const Spacer(),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/adminStats');
-                        },
-                        icon: const Icon(Icons.bar_chart),
-                        label: const Text('Estadísticas'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal, foregroundColor: Colors.white),
                       ),
                     ],
                   ),
@@ -566,5 +573,5 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
     );
-  }
+  } // cierre build y clase
 }

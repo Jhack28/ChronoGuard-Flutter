@@ -63,82 +63,84 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
       labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     if (widget.permisos.isEmpty) {
       return const Center(child: Text('No hay permisos para mostrar.'));
     }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Text(
-            'Permisos Solicitados',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+  
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Permisos Solicitados',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('Usuario')),
-              DataColumn(label: Text('Tipo Permiso')),
-              DataColumn(label: Text('Mensaje')),
-              DataColumn(label: Text('Fecha Solicitud')),
-              DataColumn(label: Text('Estado')),
-              DataColumn(label: Text('Acciones')),
-            ],
-            rows: widget.permisos.map((permiso) {
-              return DataRow(
-                cells: [
-                  DataCell(Text(permiso.nombreUsuario)),
-                  DataCell(Text(permiso.tipoPermiso)),
-                  DataCell(Text(permiso.mensaje)),
-                  DataCell(
-                    Text(
-                      '${permiso.fechaSolicitud.year}-${permiso.fechaSolicitud.month.toString().padLeft(2, '0')}-${permiso.fechaSolicitud.day.toString().padLeft(2, '0')}',
-                    ),
-                  ),
-                  DataCell(_buildEstadoChip(permiso.estadoPermiso)),
-                  DataCell(
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          tooltip: 'Aprobar',
-                          onPressed: _loading
-                              ? null
-                              : () => _cambiarEstado(permiso, 'Aprobado'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red),
-                          tooltip: 'Rechazar',
-                          onPressed: _loading
-                              ? null
-                              : () => _cambiarEstado(permiso, 'Rechazado'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.undo, color: Colors.orange),
-                          tooltip: 'Devolver a pendiente',
-                          onPressed: _loading
-                              ? null
-                              : () => _cambiarEstado(permiso, 'Pendiente'),
-                        ),
-                      ],
-                    ),
-                  ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Usuario')),
+                  DataColumn(label: Text('Tipo Permiso')),
+                  DataColumn(label: Text('Mensaje')),
+                  DataColumn(label: Text('Fecha Solicitud')),
+                  DataColumn(label: Text('Estado')),
+                  DataColumn(label: Text('Acciones')),
                 ],
-              );
-            }).toList(),
-          ),
+                rows: widget.permisos.map((permiso) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(permiso.nombreUsuario)),
+                      DataCell(Text(permiso.tipoPermiso)),
+                      DataCell(Text(permiso.mensaje)),
+                      DataCell(
+                        Text(
+                          '${permiso.fechaSolicitud.year}-${permiso.fechaSolicitud.month.toString().padLeft(2, '0')}-${permiso.fechaSolicitud.day.toString().padLeft(2, '0')}',
+                        ),
+                      ),
+                      DataCell(_buildEstadoChip(permiso.estadoPermiso)),
+                      DataCell(
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.check, color: Colors.green),
+                              tooltip: 'Aprobar',
+                              onPressed: _loading
+                                  ? null
+                                  : () => _cambiarEstado(permiso, 'Aprobado'),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              tooltip: 'Rechazar',
+                              onPressed: _loading
+                                  ? null
+                                  : () => _cambiarEstado(permiso, 'Rechazado'),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.undo, color: Colors.orange),
+                              tooltip: 'Devolver a pendiente',
+                              onPressed: _loading
+                                  ? null
+                                  : () => _cambiarEstado(permiso, 'Pendiente'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

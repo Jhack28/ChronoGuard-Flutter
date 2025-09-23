@@ -23,7 +23,7 @@ const swaggerOptions = {
       { url: 'http://192.168.10.149:3000' }, // Ajusta según IP y puerto reales
     ],
   },
-  apis: ['../APIs/server.js'], // Apunta al archivo actual para leer las anotaciones swagger
+  apis: ['../server.js'], // Apunta al archivo actual para leer las anotaciones swagger
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

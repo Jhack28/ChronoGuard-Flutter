@@ -109,7 +109,8 @@ class AdminTable extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                const Expanded(
+                const Flexible(
+                  fit: FlexFit.loose,
                   child: Text(
                     "Empleados Registrados",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
