@@ -20,10 +20,10 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://192.168.10.149:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://172.21.188.7:3000' }, // Ajusta según IP y puerto reales
     ],
   },
-  apis: ['../server.js'], // Apunta al archivo actual para leer las anotaciones swagger
+  apis: ['./server.js'], // Apunta al archivo actual para leer las anotaciones swagger
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '192.168.10.149'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '172.21.188.7'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -667,6 +667,54 @@ app.post('/asistencia/registrar', (req, res) => {
   );
 });
 
+/**
+ * @swagger
+ * /horarios/registrar:
+ *   post:
+ *     summary: Registrar un nuevo horario para un empleado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ID_Usuario
+ *               - Dia
+ *               - Hora_Entrada
+ *               - Hora_Salida
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *                 description: ID del usuario empleado
+ *               Dia:
+ *                 type: string
+ *                 description: Día de la semana (Lunes a Domingo)
+ *               Hora_Entrada:
+ *                 type: string
+ *                 description: Hora de entrada en formato HH:mm o HH:mm:ss
+ *               Hora_Salida:
+ *                 type: string
+ *                 description: Hora de salida en formato HH:mm o HH:mm:ss
+ *     responses:
+ *       201:
+ *         description: Horario registrado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 insertId:
+ *                   type: integer
+ *       400:
+ *         description: Datos inválidos o faltantes
+ *       401:
+ *         description: No autorizado (secretaria no logueada)
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.post("/horarios/registrar", (req, res) => {
   try {
     const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
@@ -754,6 +802,44 @@ app.get('/asistencia/lista', (req, res) => {
 });
 
 // Ejemplo para Node.js/Express
+/**
+ * @swagger
+ * /notificaciones/{idUsuario}:
+ *   get:
+ *     summary: Obtiene todas las notificaciones de un usuario
+ *     tags:
+ *       - Notificaciones
+ *     parameters:
+ *       - in: path
+ *         name: idUsuario
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario para obtener notificaciones
+ *     responses:
+ *       200:
+ *         description: Lista de notificaciones para el usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID_Notificacion:
+ *                     type: integer
+ *                   ID_Usuario:
+ *                     type: integer
+ *                   Mensaje:
+ *                     type: string
+ *                   Estado:
+ *                     type: string
+ *                   FechaEnvio:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Error interno en el servidor
+ */
 app.get('/notificaciones/:idUsuario', (req, res) => {
   const idUsuario = req.params.idUsuario;
   db.query(
@@ -767,9 +853,37 @@ app.get('/notificaciones/:idUsuario', (req, res) => {
       res.json(results);
     }
   );
-
 });
 
+/**
+ * @swagger
+ * /admin/estadisticas/{idUsuario}:
+ *   get:
+ *     summary: Obtiene estadísticas del estado de notificaciones de un usuario
+ *     tags:
+ *       - Administración
+ *     parameters:
+ *       - in: path
+ *         name: idUsuario
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario para obtener estadísticas
+ *     responses:
+ *       200:
+ *         description: Estadísticas del estado de notificaciones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   Estado:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/admin/estadisticas/:idUsuario', (req, res) => {
   const idUsuario = req.params.idUsuario;
   db.query(
@@ -784,6 +898,7 @@ app.get('/admin/estadisticas/:idUsuario', (req, res) => {
     }
   );
 });
+
 
 /**
  * @swagger
@@ -829,7 +944,44 @@ app.get('/empleado/:id/estadisticas', (req, res) => {
 });
 
 
-// Listar todos los horarios
+/**
+ * @swagger
+ * /horarios/lista:
+ *   get:
+ *     summary: Lista todos los horarios registrados
+ *     tags:
+ *       - Horarios
+ *     responses:
+ *       200:
+ *         description: Lista de horarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   idUsuario:
+ *                     type: integer
+ *                   nombre:
+ *                     type: string
+ *                   dia:
+ *                     type: string
+ *                   horaEntrada:
+ *                     type: string
+ *                   horaSalida:
+ *                     type: string
+ *                   fechaAsignacion:
+ *                     type: string
+ *                   asignadoPorId:
+ *                     type: integer
+ *                   asignadoPor:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/horarios/lista', (req, res) => {
   const sql = `
     SELECT 
@@ -857,7 +1009,52 @@ app.get('/horarios/lista', (req, res) => {
   });
 });
 
-// Listar horarios de un usuario específico
+
+/**
+ * @swagger
+ * /horarios/{idUsuario}:
+ *   get:
+ *     summary: Obtiene los horarios de un usuario específico
+ *     tags:
+ *       - Horarios
+ *     parameters:
+ *       - in: path
+ *         name: idUsuario
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario para obtener sus horarios
+ *     responses:
+ *       200:
+ *         description: Lista de horarios del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   idUsuario:
+ *                     type: integer
+ *                   nombre:
+ *                     type: string
+ *                   dia:
+ *                     type: string
+ *                   horaEntrada:
+ *                     type: string
+ *                   horaSalida:
+ *                     type: string
+ *                   fechaAsignacion:
+ *                     type: string
+ *                   asignadoPorId:
+ *                     type: integer
+ *                   asignadoPor:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/horarios/:idUsuario', (req, res) => {
   const { idUsuario } = req.params;
   const sql = `
@@ -887,7 +1084,59 @@ app.get('/horarios/:idUsuario', (req, res) => {
   });
 });
 
-// Editar horario
+/**
+ * @swagger
+ * /horarios/{id}:
+ *   put:
+ *     summary: Actualiza un horario existente
+ *     tags:
+ *       - Horarios
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del horario a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ID_Usuario
+ *               - Dia
+ *               - Hora_Entrada
+ *               - Hora_Salida
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *               Dia:
+ *                 type: string
+ *               Hora_Entrada:
+ *                 type: string
+ *               Hora_Salida:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Horario actualizado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Datos inválidos o faltantes en la solicitud
+ *       404:
+ *         description: Horario no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.put("/horarios/:id", (req, res) => {
   const { id } = req.params;
   const { ID_Usuario, Dia, Hora_Entrada, Hora_Salida } = req.body;
@@ -921,7 +1170,37 @@ app.put("/horarios/:id", (req, res) => {
   });
 });
 
-// Eliminar horario
+/**
+ * @swagger
+ * /horarios/{id}:
+ *   delete:
+ *     summary: Elimina un horario por su ID
+ *     tags:
+ *       - Horarios
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del horario a eliminar
+ *     responses:
+ *       200:
+ *         description: Horario eliminado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Horario no encontrado
+ *       500:
+ *         description: Error interno de servidor
+ */
 app.delete("/horarios/:id", (req, res) => {
   const { id } = req.params;
   const sql = "DELETE FROM Horarios WHERE ID_Horario = ?";
@@ -944,6 +1223,42 @@ app.delete("/horarios/:id", (req, res) => {
 
 /**
  * @swagger
+ * /permisos/lista:
+ *   get:
+ *     summary: Obtiene la lista de todas las solicitudes de permisos
+ *     tags:
+ *       - Permisos
+ *     responses:
+ *       200:
+ *         description: Lista de permisos con detalles relacionados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID_tipoPermiso:
+ *                     type: integer
+ *                   tipoPermiso:
+ *                     type: string
+ *                   mensaje:
+ *                     type: string
+ *                   Fecha_Solicitud:
+ *                     type: string
+ *                     format: date-time
+ *                   ID_Usuario:
+ *                     type: integer
+ *                   Nombre:
+ *                     type: string
+ *                   Email:
+ *                     type: string
+ *                   departamento:
+ *                     type: string
+ *                   estadoPermiso:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
  */
 app.get('/permisos/lista', (req, res) => {
   const sql = `
@@ -964,7 +1279,7 @@ app.get('/permisos/lista', (req, res) => {
       ELSE 3 
     END,
     tp.Fecha_Solicitud DESC
-    `;
+  `;
 
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -972,19 +1287,61 @@ app.get('/permisos/lista', (req, res) => {
   });
 });
 
-// Cambiar estado de un permiso (aprobar, rechazar, devolver)
+/**
+ * @swagger
+ * /permisos/{idPermiso}/estado:
+ *   put:
+ *     summary: Cambia el estado de un permiso (aprobar, rechazar, devolver)
+ *     tags:
+ *       - Permisos
+ *     parameters:
+ *       - in: path
+ *         name: idPermiso
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del permiso al cual cambiar el estado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nuevoEstado:
+ *                 type: string
+ *                 enum:
+ *                   - Aprobado
+ *                   - Rechazado
+ *                   - Pendiente
+ *                 description: Nuevo estado para el permiso
+ *     responses:
+ *       200:
+ *         description: Estado actualizado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Estado inválido
+ *       404:
+ *         description: Permiso no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.put('/permisos/:idPermiso/estado', (req, res) => {
   const idPermiso = req.params.idPermiso;
-  const { nuevoEstado } = req.body; // ejemplo: 'Aprobado', 'Rechazado', 'Pendiente'
+  const { nuevoEstado } = req.body;
 
-  // Primero obtener ID_EstadoPermiso desde EstadoPermisos para nuevoEstado
   db.query('SELECT ID_EstadoPermiso FROM EstadoPermisos WHERE Estado = ?', [nuevoEstado], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     if (results.length === 0) return res.status(400).json({ error: 'Estado inválido' });
 
     const idEstado = results[0].ID_EstadoPermiso;
 
-    // Actualizar en Notificaciones
     const sqlUpdate = `
       UPDATE Notificaciones 
       SET Estado = ?, ID_EstadoPermiso = ?
@@ -996,12 +1353,68 @@ app.put('/permisos/:idPermiso/estado', (req, res) => {
       res.json({ message: 'Estado actualizado correctamente' });
     });
   });
-})
+});
+
 
 // ================== ENDPOINT: CREAR PERMISO ==================
+/**
+ * @swagger
+ * /permisos:
+ *   post:
+ *     summary: Crear una nueva solicitud de permiso
+ *     tags:
+ *       - Permisos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ID_Usuario
+ *               - id_departamento
+ *               - tipo
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *                 description: ID del usuario que solicita permiso
+ *               id_departamento:
+ *                 type: integer
+ *                 description: ID del departamento asociado
+ *               tipo:
+ *                 type: string
+ *                 description: Tipo de permiso
+ *               mensaje:
+ *                 type: string
+ *                 description: Mensaje o motivo del permiso
+ *               Fecha_inicio:
+ *                 type: string
+ *                 format: date
+ *                 description: Fecha de inicio del permiso
+ *               Fecha_fin:
+ *                 type: string
+ *                 format: date
+ *                 description: Fecha fin del permiso
+ *     responses:
+ *       201:
+ *         description: Solicitud creada con éxito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 idPermiso:
+ *                   type: integer
+ *       400:
+ *         description: Faltan datos obligatorios
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.post('/permisos', async (req, res) => {
   try {
-    console.log("Datos recibidos en /permisos:", req.body); // 👈
+    console.log("Datos recibidos en /permisos:", req.body);
 
     const {
       ID_Usuario,
@@ -1012,22 +1425,20 @@ app.post('/permisos', async (req, res) => {
       Fecha_fin
     } = req.body;
 
-    // 🔍 Debug: mostrar cada campo recibido
-    console.log("✅ ID_Usuario:", ID_Usuario);
-    console.log("✅ id_departamento:", id_departamento);
-    console.log("✅ tipo:", tipo);
-    console.log("✅ mensaje:", mensaje);
-    console.log("✅ Fecha_inicio:", Fecha_inicio);
-    console.log("✅ Fecha_fin:", Fecha_fin);
+    console.log("ID_Usuario:", ID_Usuario);
+    console.log("id_departamento:", id_departamento);
+    console.log("tipo:", tipo);
+    console.log("mensaje:", mensaje);
+    console.log("Fecha_inicio:", Fecha_inicio);
+    console.log("Fecha_fin:", Fecha_fin);
 
     if (!ID_Usuario || !id_departamento || !tipo) {
-      console.warn("⚠️ Faltan datos obligatorios:", req.body);
+      console.warn("Faltan datos obligatorios:", req.body);
       return res.status(400).json({ error: 'Faltan datos obligatorios', dataRecibida: req.body });
     }
     
     const fechaSolicitud = Fecha_Solicitud ? Fecha_Solicitud : new Date();
 
-    // 1️⃣ Guardar en TipoPermiso
     const [result] = await db.query(
       `INSERT INTO TipoPermiso 
       (ID_Usuario, ID_Departamento, Tipo, Mensaje, Fecha_Solicitud, Fecha_Inicio, Fecha_Fin) 
@@ -1037,7 +1448,6 @@ app.post('/permisos', async (req, res) => {
 
     const idPermiso = result.insertId;
 
-    // 2️⃣ Guardar notificación para Admin/Secretaria
     await db.query(
       `INSERT INTO Notificaciones_ADMIN (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
       VALUES (?, ?, ?, 'Pendiente', NOW())`,
@@ -1052,29 +1462,46 @@ app.post('/permisos', async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ================== ENDPOINT: OBTENER TODAS LAS SOLICITUDES ==================
+/**
+ * @swagger
+ * /permisos:
+ *   get:
+ *     summary: Obtiene todas las solicitudes de permisos
+ *     tags:
+ *       - Permisos
+ *     responses:
+ *       200:
+ *         description: Lista de solicitudes de permisos con usuario y departamento
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID_tipoPermiso:
+ *                     type: integer
+ *                   Tipo:
+ *                     type: string
+ *                   Mensaje:
+ *                     type: string
+ *                   Fecha_Solicitud:
+ *                     type: string
+ *                     format: date-time
+ *                   ID_Usuario:
+ *                     type: integer
+ *                   nombre_usuario:
+ *                     type: string
+ *                   ID_Departamento:
+ *                     type: integer
+ *                   Nombre_Departamento:
+ *                     type: string
+ *                   Estado:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/permisos', async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -1092,7 +1519,50 @@ app.get('/permisos', async (req, res) => {
 });
 
 
+
 // ================== ENDPOINT: OBTENER PERMISOS POR USUARIO ==================
+/**
+ * @swagger
+ * /permisos/usuario/{id}:
+ *   get:
+ *     summary: Obtiene la lista de permisos por usuario
+ *     tags:
+ *       - Permisos
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario para obtener sus permisos
+ *     responses:
+ *       200:
+ *         description: Lista de permisos con detalles asociados al usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID_tipoPermiso:
+ *                     type: integer
+ *                   Tipo:
+ *                     type: string
+ *                   Mensaje:
+ *                     type: string
+ *                   Fecha_Solicitud:
+ *                     type: string
+ *                     format: date-time
+ *                   ID_Departamento:
+ *                     type: integer
+ *                   Nombre_Departamento:
+ *                     type: string
+ *                   Estado:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/permisos/usuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1112,7 +1582,47 @@ app.get('/permisos/usuario/:id', async (req, res) => {
 });
 
 
+
 // ================== ENDPOINT: OBTENER PERMISOS PENDIENTES ==================
+/**
+ * @swagger
+ * /permisos/pendientes:
+ *   get:
+ *     summary: Obtiene la lista de permisos pendientes
+ *     tags:
+ *       - Permisos
+ *     responses:
+ *       200:
+ *         description: Lista de permisos con estado pendiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID_tipoPermiso:
+ *                     type: integer
+ *                   Tipo:
+ *                     type: string
+ *                   Mensaje:
+ *                     type: string
+ *                   Fecha_Solicitud:
+ *                     type: string
+ *                     format: date-time
+ *                   ID_Usuario:
+ *                     type: integer
+ *                   nombre_usuario:
+ *                     type: string
+ *                   ID_Departamento:
+ *                     type: integer
+ *                   Nombre_Departamento:
+ *                     type: string
+ *                   Estado:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.get('/permisos/pendientes', async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -1131,7 +1641,53 @@ app.get('/permisos/pendientes', async (req, res) => {
 });
 
 
+
 // ================== ENDPOINT: ACTUALIZAR ESTADO DEL PERMISO(Aprobado/Rechazado)==================
+/**
+ * @swagger
+ * /permisos/{id}/estado:
+ *   put:
+ *     summary: Actualiza el estado de una solicitud de permiso
+ *     tags:
+ *       - Permisos
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la solicitud de permiso a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nuevoEstado:
+ *                 type: string
+ *                 enum:
+ *                   - Aprobado
+ *                   - Rechazado
+ *                 description: Nuevo estado para la solicitud
+ *               ID_Admin:
+ *                 type: integer
+ *                 description: ID del administrador que realiza el cambio (opcional)
+ *     responses:
+ *       200:
+ *         description: Estado actualizado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Estado inválido
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.put('/permisos/:id/estado', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1141,17 +1697,15 @@ app.put('/permisos/:id/estado', async (req, res) => {
       return res.status(400).json({ error: 'Estado inválido' });
     }
 
-    // 1️⃣ Actualizar estado
     await db.query(
       `UPDATE TipoPermiso SET Estado = ? WHERE ID_tipoPermiso = ?`,
       [nuevoEstado, id]
     );
 
-    // 2️⃣ Guardar notificación al empleado
     await db.query(
       `INSERT INTO Notificaciones (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
-       SELECT ?, tp.ID_Usuario, CONCAT('Tu solicitud ha sido ', ?) , 'Leída', NOW()
-       FROM TipoPermiso tp WHERE tp.ID_tipoPermiso = ?`,
+      SELECT ?, tp.ID_Usuario, CONCAT('Tu solicitud ha sido ', ?) , 'Leída', NOW()
+      FROM TipoPermiso tp WHERE tp.ID_tipoPermiso = ?`,
       [id, nuevoEstado, id]
     );
 
@@ -1162,9 +1716,34 @@ app.put('/permisos/:id/estado', async (req, res) => {
   }
 });
 
-
-
 // ================== ENDPOINT: ELIMINAR PERMISO ==================
+/**
+ * @swagger
+ * /permisos/{id}:
+ *   delete:
+ *     summary: Elimina una solicitud de permiso por su ID
+ *     tags:
+ *       - Permisos
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la solicitud de permiso a eliminar
+ *     responses:
+ *       200:
+ *         description: Permiso eliminado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.delete('/permisos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1175,3 +1754,4 @@ app.delete('/permisos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar permiso' });
   }
 });
+
