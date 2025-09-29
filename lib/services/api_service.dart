@@ -8,7 +8,7 @@ import 'dart:convert';
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://172.21.188.7:3000',
+    defaultValue: 'http://192.168.10.23:3000',
   );
 
   /// Obtener empleados desde la BD

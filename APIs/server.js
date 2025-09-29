@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://172.21.188.7:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://192.168.10.23:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['./server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '172.21.188.7'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '192.168.10.23'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
