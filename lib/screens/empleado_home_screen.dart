@@ -38,9 +38,8 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar datos: $e')),
-      );
+      // Solo mostrar el error en consola, no en pantalla
+      print('Error al cargar datos: $e');
     }
   }
 
@@ -51,7 +50,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
       "¡Un gran día para dar lo mejor de ti!",
       "La constancia construye el éxito.",
       "Cada día cuenta, hazlo valer.",
-      "El esfuerzo de hoy será tu orgullo mañana."
+      "El esfuerzo de hoy será tu orgullo mañana.",
     ];
     final random = Random();
     final fraseMotivacional = frases[random.nextInt(frases.length)];
@@ -89,7 +88,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout , color: Colors.black),
+            icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () {
               Navigator.pushReplacementNamed(context, '/');
             },
@@ -149,11 +148,100 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                     color: Colors.orange[200]!,
                     title: "Modificar contraseña",
                     onTap: () {
+                      final actualCtrl = TextEditingController();
+                      final nuevaCtrl = TextEditingController();
+                      final repetirCtrl = TextEditingController();
                       showDialog(
                         context: context,
-                        builder: (context) => const AlertDialog(
-                          title: Text("Modificar contraseña"),
-                          content: Text("Funcionalidad próximamente disponible."),
+                        builder: (context) => AlertDialog(
+                          title: const Text("Modificar contraseña"),
+                          content: StatefulBuilder(
+                            builder: (context, setState) {
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: actualCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Contraseña actual',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: nuevaCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Nueva contraseña',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: repetirCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Repetir nueva contraseña',
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final actual = actualCtrl.text.trim();
+                                final nueva = nuevaCtrl.text.trim();
+                                final repetir = repetirCtrl.text.trim();
+                                if (actual.isEmpty ||
+                                    nueva.isEmpty ||
+                                    repetir.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Completa todos los campos',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (nueva != repetir) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Las contraseñas no coinciden',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  await ApiService.cambiarContrasena(
+                                    widget.idUsuario,
+                                    actual,
+                                    nueva,
+                                  );
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Contraseña modificada correctamente',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              },
+                              child: const Text('Guardar'),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -168,7 +256,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                         context: context,
                         builder: (context) => const AlertDialog(
                           title: Text("Mis asistencias"),
-                          content: Text("Funcionalidad próximamente disponible."),
+                          content: Text(
+                            "Funcionalidad próximamente disponible.",
+                          ),
                         ),
                       );
                     },
@@ -217,10 +307,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
             ),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black54,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
               textAlign: TextAlign.center,
             ),
           ],
@@ -229,11 +316,13 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
     );
   }
 
-  Widget _buildMenuCard(BuildContext context,
-      {required IconData icon,
-      required Color color,
-      required String title,
-      required VoidCallback onTap}) {
+  Widget _buildMenuCard(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -278,8 +367,10 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.teal[50],
-          title: Text('Solicitar Permiso',
-              style: TextStyle(color: Colors.teal[900])),
+          title: Text(
+            'Solicitar Permiso',
+            style: TextStyle(color: Colors.teal[900]),
+          ),
           content: StatefulBuilder(
             builder: (context, setState) {
               return SingleChildScrollView(
@@ -293,16 +384,21 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                         fillColor: Colors.teal[100],
                       ),
                       initialValue: tipoPermiso,
-                      items: [
-                        'Calamidad doméstica',
-                        'Cita Médica',
-                        'Permiso Personal',
-                        'Permiso por citación legal o judicial',
-                        'Eventos familiares'
-                      ]
-                          .map((permiso) =>
-                              DropdownMenuItem(value: permiso, child: Text(permiso)))
-                          .toList(),
+                      items:
+                          [
+                                'Calamidad doméstica',
+                                'Cita Médica',
+                                'Permiso Personal',
+                                'Permiso por citación legal o judicial',
+                                'Eventos familiares',
+                              ]
+                              .map(
+                                (permiso) => DropdownMenuItem(
+                                  value: permiso,
+                                  child: Text(permiso),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (val) => setState(() => tipoPermiso = val),
                     ),
                     const SizedBox(height: 12),
@@ -330,7 +426,8 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null) setState(() => fechaInicio = picked);
+                              if (picked != null)
+                                setState(() => fechaInicio = picked);
                             },
                             child: Text(
                               fechaInicio == null
@@ -353,7 +450,8 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null) setState(() => fechaFin = picked);
+                              if (picked != null)
+                                setState(() => fechaFin = picked);
                             },
                             child: Text(
                               fechaFin == null
@@ -373,7 +471,10 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar', style: TextStyle(color: Colors.teal[900])),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.teal[900]),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
@@ -383,27 +484,35 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                   'id_departamento': _usuario?.idDepartamento,
                   'tipo': tipoPermiso,
                   'mensaje': descripcionCtrl.text,
-                  'Fecha_Solicitud':
-                      DateTime.now().toIso8601String().substring(0, 10),
-                  'Fecha_inicio':
-                      fechaInicio?.toIso8601String().substring(0, 10),
+                  'Fecha_Solicitud': DateTime.now().toIso8601String().substring(
+                    0,
+                    10,
+                  ),
+                  'Fecha_inicio': fechaInicio?.toIso8601String().substring(
+                    0,
+                    10,
+                  ),
                   'Fecha_fin': fechaFin?.toIso8601String().substring(0, 10),
                 };
                 try {
-                  final idTipoPermiso =
-                      await ApiService.crearPermiso(permisoData);
+                  final idTipoPermiso = await ApiService.crearPermiso(
+                    permisoData,
+                  );
                   await ApiService.crearNotificacionEmpleado({
                     'ID_Usuario': widget.idUsuario,
                     'ID_EstadoPermiso': 1,
                     'Mensaje':
                         'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
-                    'FechaEnvio':
-                        DateTime.now().toIso8601String().substring(0, 10),
+                    'FechaEnvio': DateTime.now().toIso8601String().substring(
+                      0,
+                      10,
+                    ),
                     'Estado': 'Pendiente',
                   });
                   await ApiService.crearNotificacionAdmin({
-                    'Fecha_Solicitud':
-                        DateTime.now().toIso8601String().substring(0, 10),
+                    'Fecha_Solicitud': DateTime.now()
+                        .toIso8601String()
+                        .substring(0, 10),
                     'ID_Usuario': widget.idUsuario,
                     'ID_tipoPermiso': idTipoPermiso,
                     'tipo': tipoPermiso,
@@ -412,7 +521,8 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Permiso solicitado correctamente')),
+                      content: Text('Permiso solicitado correctamente'),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(

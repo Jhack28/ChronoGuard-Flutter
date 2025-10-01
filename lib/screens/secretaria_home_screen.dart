@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/empleado.dart';
 import '../models/Horarios.dart';
+import '../models/estado_permisos.dart';
 import '../services/api_service.dart';
 import '../widgets/empleados_table.dart';
 import '../widgets/horarios_table.dart';
+import '../widgets/secre_permisos_table.dart';
 
 class SecretariaHomeScreen extends StatefulWidget {
   final int idSecretaria;
@@ -14,6 +16,41 @@ class SecretariaHomeScreen extends StatefulWidget {
 }
 
 class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
+  // --- Permisos para el panel de secretaria ---
+  List<Permiso> permisos = [];
+  bool loadingPermisos = true;
+  String _filtroEstadoPermiso = 'Todos';
+
+  Future<void> _cargarPermisos() async {
+    setState(() => loadingPermisos = true);
+    try {
+      final list = await ApiService.fetchPermisos();
+      setState(() {
+        permisos = list;
+        loadingPermisos = false;
+      });
+    } catch (e) {
+      setState(() => loadingPermisos = false);
+      print("Error al cargar permisos: $e");
+    }
+  }
+
+  Future<void> _cambiarEstadoPermiso(int idPermiso, String nuevoEstado) async {
+    try {
+      await ApiService.actualizarEstadoPermiso(idPermiso, nuevoEstado);
+      await _cargarPermisos();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Permiso $idPermiso actualizado a $nuevoEstado'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar permiso: $e')),
+      );
+    }
+  }
+
   int get idSecretaria => widget.idSecretaria;
   List<Empleado> empleados = [];
   bool loadingEmpleados = true;
@@ -25,6 +62,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     super.initState();
     _cargarEmpleados();
     _cargarHorarios();
+    _cargarPermisos();
   }
 
   String _mapDiaSemana(DateTime fecha) {
@@ -234,7 +272,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
         ? horarios
         : horarios.where((h) => h.idUsuario == filtroEmpleadoId).toList();
 
-    return Scaffold(
+  return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Secretaria'),
         backgroundColor: const Color.fromARGB(255, 0, 207, 187),
@@ -303,27 +341,30 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                       EmpleadosTable(
                         empleados: empleados,
                         loading: loadingEmpleados,
-                        onAsignarHorario: (idEmpleado, fecha, entrada, salida) async {
-                          try {
-                            final nuevo = Horario(
-                              idUsuario: idEmpleado,
-                              dia: _mapDiaSemana(DateTime.parse(fecha)),
-                              horaEntrada: entrada,
-                              horaSalida: salida,
-                            );
-                            final ok = await ApiService.asignarHorario(
-                              nuevo,
-                              idSecretaria,
-                            );
-                            if (ok) await _cargarHorarios();
-                          } catch (e) {
-                            print("Error al asignar horario: $e");
-                          }
-                        },
+                        onAsignarHorario:
+                            (idEmpleado, fecha, entrada, salida) async {
+                              try {
+                                final nuevo = Horario(
+                                  idUsuario: idEmpleado,
+                                  dia: _mapDiaSemana(DateTime.parse(fecha)),
+                                  horaEntrada: entrada,
+                                  horaSalida: salida,
+                                );
+                                final ok = await ApiService.asignarHorario(
+                                  nuevo,
+                                  idSecretaria,
+                                );
+                                if (ok) await _cargarHorarios();
+                              } catch (e) {
+                                print("Error al asignar horario: $e");
+                              }
+                            },
                         onEnviarReporte: (idEmpleado, motivo) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Reporte para empleado $idEmpleado: $motivo'),
+                              content: Text(
+                                'Reporte para empleado $idEmpleado: $motivo',
+                              ),
                             ),
                           );
                         },
@@ -341,7 +382,8 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   child: const Text('Cancelar'),
                                 ),
                                 ElevatedButton(
@@ -352,11 +394,15 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                             ),
                           );
                           if (confirm == true) {
-                            final ok = await ApiService.eliminarHorario(idHorario);
+                            final ok = await ApiService.eliminarHorario(
+                              idHorario,
+                            );
                             if (ok) {
                               await _cargarHorarios();
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Horario eliminado')),
+                                const SnackBar(
+                                  content: Text('Horario eliminado'),
+                                ),
                               );
                             }
                           }
@@ -365,10 +411,85 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: ElevatedButton(
-                          onPressed: () {
-                            _mostrarSeleccionEmpleadoParaReporte();
+                          onPressed: () async {
+                            await _cargarPermisos();
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return StatefulBuilder(
+                                  builder: (context, setStateDialog) {
+                                    // Filtrar permisos según estado
+                                    List<Permiso> permisosFiltrados = _filtroEstadoPermiso == 'Todos'
+                                        ? permisos
+                                        : permisos.where((p) => p.estadoPermiso == _filtroEstadoPermiso).toList();
+                                    return AlertDialog(
+                                      title: const Text('Panel de Permisos'),
+                                      content: SizedBox(
+                                        width: 600,
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Text('Filtrar por estado: '),
+                                                const SizedBox(width: 10),
+                                                DropdownButton<String>(
+                                                  value: _filtroEstadoPermiso,
+                                                  items: [
+                                                    'Todos',
+                                                    'Pendiente',
+                                                    'Aprobado',
+                                                    'Rechazado',
+                                                  ].map((estado) => DropdownMenuItem(
+                                                    value: estado,
+                                                    child: Text(estado),
+                                                  )).toList(),
+                                                  onChanged: (v) {
+                                                    if (v != null) {
+                                                      setStateDialog(() {
+                                                        _filtroEstadoPermiso = v;
+                                                      });
+                                                    }
+                                                  },
+                                                ),
+                                                const Spacer(),
+                                                IconButton(
+                                                  icon: const Icon(Icons.refresh),
+                                                  tooltip: 'Refrescar permisos',
+                                                  onPressed: () async {
+                                                    setStateDialog(() {
+                                                      loadingPermisos = true;
+                                                    });
+                                                    await _cargarPermisos();
+                                                    setStateDialog(() {});
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              child: SecrePermisosTable(
+                                                permisos: permisosFiltrados,
+                                                loading: loadingPermisos,
+                                                onCambiarEstado: _cambiarEstadoPermiso,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Cerrar'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            );
                           },
-                          child: const Text('Generar Reporte'),
+                          child: const Text('Generar Reporte de permisos'),
                         ),
                       ),
                     ],

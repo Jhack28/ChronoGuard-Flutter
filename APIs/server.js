@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://192.168.10.23:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://192.168.1.78:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['./server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '192.168.10.23'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '192.168.1.78'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -461,6 +461,81 @@ app.put('/usuario/:id', (req, res) => {
       res.json({ message: 'Empleado actualizado' });
     }
   );
+});
+
+/**
+ * @swagger
+ * /cambiar-contrasena:
+ *   post:
+ *     summary: Permite a un usuario cambiar su contraseña
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idUsuario
+ *               - contrasenaActual
+ *               - nuevaContrasena
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario
+ *               contrasenaActual:
+ *                 type: string
+ *                 description: Contraseña actual
+ *               nuevaContrasena:
+ *                 type: string
+ *                 description: Nueva contraseña
+ *     responses:
+ *       200:
+ *         description: Contraseña cambiada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Datos inválidos o contraseña incorrecta
+ *       500:
+ *         description: Error interno del servidor
+ */
+app.post('/cambiar-contrasena', (req, res) => {
+  const { idUsuario, contrasenaActual, nuevaContrasena } = req.body;
+  if (!idUsuario || !contrasenaActual || !nuevaContrasena) {
+    return res.status(400).json({ success: false, message: 'Faltan datos requeridos' });
+  }
+
+  const actualMd5 = crypto.createHash('md5').update(contrasenaActual).digest('hex');
+  const nuevaMd5 = crypto.createHash('md5').update(nuevaContrasena).digest('hex');
+
+  // Verificar contraseña actual
+  db.query('SELECT Password FROM Usuarios WHERE ID_Usuario = ?', [idUsuario], (err, results) => {
+    if (err) {
+      console.error('Error en consulta SQL:', err);
+      return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+    if (results.length === 0) {
+      return res.status(400).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    if (results[0].Password !== actualMd5) {
+      return res.status(400).json({ success: false, message: 'Contraseña actual incorrecta' });
+    }
+
+    // Actualizar contraseña
+    db.query('UPDATE Usuarios SET Password = ? WHERE ID_Usuario = ?', [nuevaMd5, idUsuario], (err2, result) => {
+      if (err2) {
+        console.error('Error al actualizar contraseña:', err2);
+        return res.status(500).json({ success: false, message: 'Error al actualizar la contraseña' });
+      }
+      return res.json({ success: true, message: 'Contraseña cambiada exitosamente' });
+    });
+  });
 });
 
 /**

@@ -6,9 +6,34 @@ import '../models/estado_permisos.dart';
 import 'dart:convert';
 
 class ApiService {
+  // Cambiar contraseña de usuario
+  static Future<void> cambiarContrasena(
+    int idUsuario,
+    String actual,
+    String nueva,
+  ) async {
+    final url = Uri.parse('$baseUrl/cambiar-contrasena');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'idUsuario': idUsuario,
+        'contrasenaActual': actual,
+        'nuevaContrasena': nueva,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Error al cambiar contraseña: ${response.body}');
+    }
+    final body = jsonDecode(response.body);
+    if (body['success'] != true) {
+      throw Exception(body['message'] ?? 'No se pudo cambiar la contraseña');
+    }
+  }
+
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.10.23:3000',
+    defaultValue: 'http://192.168.1.78:3000',
   );
 
   /// Obtener empleados desde la BD
@@ -118,7 +143,10 @@ class ApiService {
   }
 
   /// Actualizar estado del permiso
-  static Future<void> actualizarEstadoPermiso(int idPermiso, String nuevoEstado) async {
+  static Future<void> actualizarEstadoPermiso(
+    int idPermiso,
+    String nuevoEstado,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/permisos/$idPermiso/estado'),
       headers: {'Content-Type': 'application/json'},
@@ -345,58 +373,53 @@ class ApiService {
     throw Exception('Error al cargar notificaciones');
   }
 
-
   static Future<bool> checkConnection() async {
-  try {
-    final response = await http.head(Uri.parse(baseUrl));
-    return response.statusCode == 200;
-  } catch (e) {
-    print("❌ Error al verificar conexión: $e");
-    return false;
+    try {
+      final response = await http.head(Uri.parse(baseUrl));
+      return response.statusCode == 200;
+    } catch (e) {
+      print("❌ Error al verificar conexión: $e");
+      return false;
+    }
   }
-}
 
   // Crear permiso
- static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
-  final res = await http.post(
-    Uri.parse('$baseUrl'),
-    body: jsonEncode(permisoData),
-    headers: {'Content-Type': 'application/json'},
-  );
+  static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl'),
+      body: jsonEncode(permisoData),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-  if (res.statusCode == 200 || res.statusCode == 201) {
-    return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
+    }
+    throw Exception('Error al crear permiso: ${res.body}');
   }
-  throw Exception('Error al crear permiso: ${res.body}');
-}
-
 
   Future<int> solicitarPermiso({
-  required int idUsuario,
-  required int idDepartamento,
-  required String tipo,
-  required String mensaje,
-  required DateTime fechaInicio,
-  required DateTime fechaFin,
-}) async {
-  final permiso = {
-    "ID_Usuario": idUsuario,
-    "ID_Departamento": idDepartamento,
-    "tipo": tipo,
-    "mensaje": mensaje,
-    "Fecha_inicio": fechaInicio.toIso8601String().split('T')[0],
-    "Fecha_fin": fechaFin.toIso8601String().split('T')[0],
-  };
+    required int idUsuario,
+    required int idDepartamento,
+    required String tipo,
+    required String mensaje,
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+  }) async {
+    final permiso = {
+      "ID_Usuario": idUsuario,
+      "ID_Departamento": idDepartamento,
+      "tipo": tipo,
+      "mensaje": mensaje,
+      "Fecha_inicio": fechaInicio.toIso8601String().split('T')[0],
+      "Fecha_fin": fechaFin.toIso8601String().split('T')[0],
+    };
 
-  print("📤 Enviando permiso: $permiso"); // Debug para verificar
-  print("➡️ ID Usuario: $idUsuario");
-  print("➡️ ID Departamento: $idDepartamento"); // 👈 DEBUG
+    print("📤 Enviando permiso: $permiso"); // Debug para verificar
+    print("➡️ ID Usuario: $idUsuario");
+    print("➡️ ID Departamento: $idDepartamento"); // 👈 DEBUG
 
-  return await ApiService.crearPermiso(permiso);
-  
-}
-
-
+    return await ApiService.crearPermiso(permiso);
+  }
 
   // Crear notificación para empleado
   static Future<void> crearNotificacionEmpleado(
@@ -484,7 +507,9 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> fetchEmpleadoStats(int idUsuario) async {
-    final response = await http.get(Uri.parse('$baseUrl/empleado/stats/$idUsuario'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/empleado/$idUsuario/estadisticas'),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
@@ -492,7 +517,7 @@ class ApiService {
     }
   }
 
-    static Future<List<Permiso>> fetchPermiso() async {
+  static Future<List<Permiso>> fetchPermiso() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/permisos/lista'));
       if (response.statusCode == 200) {
@@ -510,7 +535,10 @@ class ApiService {
   }
 
   // Actualizar estado del permiso especificado
-  static Future<void> actualizarEstadoPermisos(int idTipoPermiso, String nuevoEstado) async {
+  static Future<void> actualizarEstadoPermisos(
+    int idTipoPermiso,
+    String nuevoEstado,
+  ) async {
     final url = Uri.parse('$baseUrl/permisos/estado/$idTipoPermiso');
     try {
       final response = await http.put(
@@ -519,7 +547,9 @@ class ApiService {
         body: jsonEncode({'estado': nuevoEstado}), // jsonEncode no json.encode
       );
       if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception('Error al actualizar estado: código ${response.statusCode}');
+        throw Exception(
+          'Error al actualizar estado: código ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('Error en actualizarEstadoPermiso: $e');
@@ -527,7 +557,3 @@ class ApiService {
     }
   }
 }
-
-
-
-
