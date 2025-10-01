@@ -21,52 +21,56 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
 
   // Navega a la pantalla de lista de usuarios con un filtro
   void _navigateToUserList(String title, List<Usuario> users) async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AdminUserListScreen(
-          title: title,
-          users: users,
-        ),
+        builder: (_) => AdminUserListScreen(title: title, users: users),
       ),
     );
-
-    // Si volvemos con 'true', significa que algo cambió y debemos refrescar.
-    if (result == true) {
-      setState(() {
-        _usuariosFuture = ApiService.fetchUsuarios();
-      });
-    }
   }
 
   // Helper para construir una tarjeta de estadística
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // La navegación se manejará en el widget padre
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: Colors.teal),
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.black54),
-              ),
-            ],
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    Color iconColor = Colors.teal,
+    VoidCallback? onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Card(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: iconColor, size: 38),
+                const SizedBox(height: 10),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -78,78 +82,95 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estadísticas de Usuarios'),
-        backgroundColor: const Color.fromARGB(197, 3, 19, 110),
+        backgroundColor: const Color.fromARGB(210, 56, 190, 168),
       ),
-      body: FutureBuilder<List<Usuario>>(
-        future: _usuariosFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error al cargar datos: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay usuarios para mostrar estadísticas.'));
-          }
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.lightBlueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: FutureBuilder<List<Usuario>>(
+          future: _usuariosFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error al cargar datos: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text('No hay usuarios para mostrar estadísticas.'));
+            }
 
-          final usuarios = snapshot.data!;
+            final usuarios = snapshot.data!;
 
-          // Calcular estadísticas
-          final totalUsuarios = usuarios.length;
-          final activos = usuarios.where((u) => u.activo).length;
-          final inactivos = totalUsuarios - activos;
-          final admins = usuarios.where((u) => u.rol == 'Admin').length;
-          final secretarias = usuarios.where((u) => u.rol == 'Secretaria').length;
-          final empleados = usuarios.where((u) => u.rol == 'Empleado').length;
+            // Calcular estadísticas
+            final totalUsuarios = usuarios.length;
+            final activos = usuarios.where((u) => u.activo).length;
+            final inactivos = totalUsuarios - activos;
+            final admins = usuarios.where((u) => u.rol == 'Admin').length;
+            final secretarias = usuarios.where((u) => u.rol == 'Secretaria').length;
+            final empleados = usuarios.where((u) => u.rol == 'Empleado').length;
 
-          return RefreshIndicator(
-            onRefresh: () async => setState(() => _usuariosFuture = ApiService.fetchUsuarios()),
-            child: GridView.count(
-              padding: const EdgeInsets.all(16),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                GestureDetector(
-                  onTap: () => _navigateToUserList('Todos los Usuarios', usuarios),
-                  child: _buildStatCard('Total Usuarios', totalUsuarios.toString(), Icons.people),
-                ),
-                GestureDetector(
-                  onTap: () => _navigateToUserList(
-                      'Usuarios Activos', usuarios.where((u) => u.activo).toList()),
-                  child: _buildStatCard('Activos', activos.toString(), Icons.check_circle),
-                ),
-                GestureDetector(
-                  onTap: () => _navigateToUserList(
-                      'Usuarios Inactivos', usuarios.where((u) => !u.activo).toList()),
-                  child: _buildStatCard('Inactivos', inactivos.toString(), Icons.cancel),
-                ),
-                GestureDetector(
-                  onTap: () => _navigateToUserList(
-                      'Administradores',
-                      usuarios.where((u) => u.rol == 'Administrador').toList()),
-                  child: _buildStatCard(
-                      'Administradores', admins.toString(), Icons.admin_panel_settings),
-                ),
-                GestureDetector(
-                  onTap: () => _navigateToUserList(
-                      'Secretarias',
-                      usuarios.where((u) => u.rol == 'Secretaria').toList()),
-                  child: _buildStatCard(
-                      'Secretarias', secretarias.toString(), Icons.support_agent),
-                ),
-                GestureDetector(
-                  onTap: () => _navigateToUserList(
-                      'Empleados',
-                      usuarios.where((u) => u.rol == 'Empleado').toList()),
-                  child: _buildStatCard(
-                      'Empleados', empleados.toString(), Icons.engineering),
-                ),
-              ],
-            ),
-          );
-        },
+            // Ejemplo de filtros:
+            final activosList = usuarios.where((u) => u.estado == 'Activo').toList();
+            final inactivosList = usuarios.where((u) => u.estado == 'Inactivo').toList();
+            final empleadosList = usuarios.where((u) => u.rol == 'Empleado').toList();
+
+            return RefreshIndicator(
+              onRefresh: () async => setState(() => _usuariosFuture = ApiService.fetchUsuarios()),
+              child: GridView.count(
+                padding: const EdgeInsets.all(16),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: [
+                  _buildStatCard(
+                    title: 'Total Usuarios',
+                    value: totalUsuarios.toString(),
+                    icon: Icons.people,
+                    onTap: () => _navigateToUserList('Total Usuarios', usuarios),
+                  ),
+                  _buildStatCard(
+                    title: 'Activos',
+                    value: activos.toString(),
+                    icon: Icons.check_circle,
+                    onTap: () => _navigateToUserList('Activos', activosList),
+                  ),
+                  _buildStatCard(
+                    title: 'Inactivos',
+                    value: inactivos.toString(),
+                    icon: Icons.cancel,
+                    onTap: () => _navigateToUserList('Inactivos', inactivosList),
+                  ),
+                  _buildStatCard(
+                    title: 'Administradores',
+                    value: admins.toString(),
+                    icon: Icons.admin_panel_settings,
+                    onTap: () => _navigateToUserList('Administradores',
+                        usuarios.where((u) => u.rol == 'Admin').toList()),
+                  ),
+                  _buildStatCard(
+                    title: 'Secretarias',
+                    value: secretarias.toString(),
+                    icon: Icons.support_agent,
+                    onTap: () => _navigateToUserList('Secretarias',
+                        usuarios.where((u) => u.rol == 'Secretaria').toList()),
+                  ),
+                  _buildStatCard(
+                    title: 'Empleados',
+                    value: empleados.toString(),
+                    icon: Icons.engineering,
+                    onTap: () => _navigateToUserList('Empleados', empleadosList),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
