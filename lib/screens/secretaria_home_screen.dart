@@ -83,7 +83,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
         nombre: "Desconocido",
         email: "",
         rol: "",
-        departamento: "",
+        id_departamento: "",
         documento: "",
         estado: "",
       ),

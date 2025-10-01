@@ -6,8 +6,8 @@ class Usuario {
   final String documento;
   final String estado;
   final bool activo;
-  final String rol; // agregado
-  final int? idDepartamento;
+  final String rol;
+  final dynamic id_departamento; // Puede ser int o String
 
   Usuario({
     required this.id,
@@ -18,21 +18,15 @@ class Usuario {
     required this.estado,
     required this.activo,
     required this.rol,
-    this.idDepartamento,
+    this.id_departamento,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     final rawActivo = json['activo'];
     bool activoVal = false;
-    if (rawActivo is bool)
-      activoVal = rawActivo;
-    else if (rawActivo is num)
-      activoVal = rawActivo == 1;
-    else if (rawActivo is String)
-      activoVal =
-          rawActivo == '1' ||
-          rawActivo.toLowerCase() == 'true' ||
-          rawActivo.toLowerCase() == 'activo';
+    if (rawActivo is bool) activoVal = rawActivo;
+    else if (rawActivo is num) activoVal = rawActivo == 1;
+    else if (rawActivo is String) activoVal = rawActivo == '1' || rawActivo.toLowerCase() == 'true' || rawActivo.toLowerCase() == 'activo';
 
     return Usuario(
       id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
@@ -42,8 +36,9 @@ class Usuario {
       documento: json['documento']?.toString() ?? '',
       estado: json['estado']?.toString() ?? (activoVal ? 'Activo' : 'Inactivo'),
       activo: activoVal,
-      rol: json['rol']?.toString() ?? '', // mapeo de rol
-      idDepartamento: json['id_departamento'],
+      rol: json['rol']?.toString() ?? '',
+      id_departamento: json['id_departamento'] ?? json['ID_Departamento'] ?? json['iddepartamento'],
+
     );
   }
 }

@@ -62,7 +62,7 @@ class EmpleadosTable extends StatelessWidget {
                     DataCell(Text(emp.id.toString())),
                     DataCell(Text(emp.nombre)),
                     DataCell(Text(emp.email)),
-                    DataCell(Text(emp.departamento.isEmpty ? "-" : emp.departamento)),
+                    DataCell(Text(emp.id_departamento.isEmpty ? "-" : emp.id_departamento)),
                     DataCell(
                       Row(
                         children: [

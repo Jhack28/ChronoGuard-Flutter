@@ -20,7 +20,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://172.21.188.7:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://172.17.253.7:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['./server.js'], // Apunta al archivo actual para leer las anotaciones swagger
@@ -82,7 +82,7 @@ connectDb().then(() => {
 
   // Iniciar el servidor en puerto 3000
   const PORT = 3000;
-  const HOST = process.env.API_HOST || '172.21.188.7'; // <- escucha en la IP del PC/lan
+  const HOST = process.env.API_HOST || '172.17.253.7'; // <- escucha en la IP del PC/lan
   app.listen(PORT, HOST, () => {
     console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
   });
@@ -281,14 +281,14 @@ app.get('/usuario/:id', (req, res) => {
   db.query(
     `SELECT 
       u.ID_Usuario AS id, u.Nombre AS nombre, u.Email AS email, r.tipo AS rol, 
-      d.tipo AS departamento, u.ID_Departamento as id_departamento,
+      d.tipo AS Departamento, u.id_departamento as id_departamento,
       u.Numero_de_Documento AS documento, 
       CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 'Activo' ELSE 'Inactivo' END AS estado,
       CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 1 ELSE 0 END AS activo
     FROM Usuarios u
     LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
-    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento
-    WHERE u.ID_Usuario = ?`,
+    LEFT JOIN Departamento d ON u.id_departamento = d.id_departamento
+    WHERE u.ID_Usuario = `,
     [id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -1414,50 +1414,24 @@ app.put('/permisos/:idPermiso/estado', (req, res) => {
  */
 app.post('/permisos', async (req, res) => {
   try {
-    console.log("Datos recibidos en /permisos:", req.body);
+    const { ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud } = req.body;
 
-    const {
-      ID_Usuario,
-      id_departamento,
-      tipo,
-      mensaje,
-      Fecha_inicio,
-      Fecha_fin
-    } = req.body;
-
-    console.log("ID_Usuario:", ID_Usuario);
-    console.log("id_departamento:", id_departamento);
-    console.log("tipo:", tipo);
-    console.log("mensaje:", mensaje);
-    console.log("Fecha_inicio:", Fecha_inicio);
-    console.log("Fecha_fin:", Fecha_fin);
-
-    if (!ID_Usuario || !id_departamento || !tipo) {
-      console.warn("Faltan datos obligatorios:", req.body);
+    if (!ID_Usuario || !tipo || !mensaje || !Fecha_Solicitud) {
       return res.status(400).json({ error: 'Faltan datos obligatorios', dataRecibida: req.body });
     }
-    
-    const fechaSolicitud = Fecha_Solicitud ? Fecha_Solicitud : new Date();
 
-    const [result] = await db.query(
-      `INSERT INTO TipoPermiso 
-      (ID_Usuario, ID_Departamento, Tipo, Mensaje, Fecha_Solicitud, Fecha_Inicio, Fecha_Fin) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [ID_Usuario, id_departamento, tipo, mensaje, fechaSolicitud, Fecha_inicio, Fecha_fin]
+    // Insertar permiso en la tabla TipoPermiso
+    const [result] = await db.promise().query(
+      'INSERT INTO TipoPermiso (ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud) VALUES (?, ?, ?, ?, ?)',
+      [ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud]
     );
 
     const idPermiso = result.insertId;
 
-    await db.query(
-      `INSERT INTO Notificaciones_ADMIN (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
-      VALUES (?, ?, ?, 'Pendiente', NOW())`,
-      [idPermiso, ID_Usuario, `Nueva solicitud de permiso: ${tipo}`]
-    );
-
-    res.status(201).json({ message: 'Solicitud creada con éxito', idPermiso });
+    // Responder con éxito y el id insertado
+    res.status(201).json({ idPermiso });
   } catch (error) {
-    console.error('Error al crear solicitud:', error);
-    res.status(500).json({ error: 'Error al crear la solicitud' });
+    res.status(500).json({ error: error.message });
   }
 });
 
