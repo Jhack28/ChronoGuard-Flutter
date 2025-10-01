@@ -466,6 +466,81 @@ app.put('/usuario/:id', (req, res) => {
 
 /**
  * @swagger
+ * /cambiar-contrasena:
+ *   post:
+ *     summary: Permite a un usuario cambiar su contraseña
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idUsuario
+ *               - contrasenaActual
+ *               - nuevaContrasena
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario
+ *               contrasenaActual:
+ *                 type: string
+ *                 description: Contraseña actual
+ *               nuevaContrasena:
+ *                 type: string
+ *                 description: Nueva contraseña
+ *     responses:
+ *       200:
+ *         description: Contraseña cambiada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Datos inválidos o contraseña incorrecta
+ *       500:
+ *         description: Error interno del servidor
+ */
+app.post('/cambiar-contrasena', (req, res) => {
+  const { idUsuario, contrasenaActual, nuevaContrasena } = req.body;
+  if (!idUsuario || !contrasenaActual || !nuevaContrasena) {
+    return res.status(400).json({ success: false, message: 'Faltan datos requeridos' });
+  }
+
+  const actualMd5 = crypto.createHash('md5').update(contrasenaActual).digest('hex');
+  const nuevaMd5 = crypto.createHash('md5').update(nuevaContrasena).digest('hex');
+
+  // Verificar contraseña actual
+  db.query('SELECT Password FROM Usuarios WHERE ID_Usuario = ?', [idUsuario], (err, results) => {
+    if (err) {
+      console.error('Error en consulta SQL:', err);
+      return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+    if (results.length === 0) {
+      return res.status(400).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    if (results[0].Password !== actualMd5) {
+      return res.status(400).json({ success: false, message: 'Contraseña actual incorrecta' });
+    }
+
+    // Actualizar contraseña
+    db.query('UPDATE Usuarios SET Password = ? WHERE ID_Usuario = ?', [nuevaMd5, idUsuario], (err2, result) => {
+      if (err2) {
+        console.error('Error al actualizar contraseña:', err2);
+        return res.status(500).json({ success: false, message: 'Error al actualizar la contraseña' });
+      }
+      return res.json({ success: true, message: 'Contraseña cambiada exitosamente' });
+    });
+  });
+});
+
+/**
+ * @swagger
  * /usuarios/inactivar/{id}:
  *   put:
  *     summary: Inactiva un empleado (plural)

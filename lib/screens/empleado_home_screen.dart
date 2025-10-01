@@ -42,9 +42,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
         _usuario = results[1] as Usuario;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al cargar datos: $e')));
+      setState(() => _isLoading = false);
+      // Solo mostrar el error en consola, no en pantalla
+      print('Error al cargar datos: $e');
     }
   }
 
@@ -169,13 +169,100 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                     color: Colors.orange[200]!,
                     title: "Modificar contraseña",
                     onTap: () {
+                      final actualCtrl = TextEditingController();
+                      final nuevaCtrl = TextEditingController();
+                      final repetirCtrl = TextEditingController();
                       showDialog(
                         context: context,
-                        builder: (context) => const AlertDialog(
-                          title: Text("Modificar contraseña"),
-                          content: Text(
-                            "Funcionalidad próximamente disponible.",
+                        builder: (context) => AlertDialog(
+                          title: const Text("Modificar contraseña"),
+                          content: StatefulBuilder(
+                            builder: (context, setState) {
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: actualCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Contraseña actual',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: nuevaCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Nueva contraseña',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: repetirCtrl,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Repetir nueva contraseña',
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final actual = actualCtrl.text.trim();
+                                final nueva = nuevaCtrl.text.trim();
+                                final repetir = repetirCtrl.text.trim();
+                                if (actual.isEmpty ||
+                                    nueva.isEmpty ||
+                                    repetir.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Completa todos los campos',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (nueva != repetir) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Las contraseñas no coinciden',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  await ApiService.cambiarContrasena(
+                                    widget.idUsuario,
+                                    actual,
+                                    nueva,
+                                  );
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Contraseña modificada correctamente',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              },
+                              child: const Text('Guardar'),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -185,63 +272,16 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                     icon: Icons.calendar_month,
                     color: Colors.lightBlue[100]!,
                     title: "Mis asistencias",
-                    onTap: () async {
-                      try {
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
-                        final horarios =
-                            await ApiService.obtenerHorariosUsuario(
-                              widget.idUsuario,
-                            );
-                        Navigator.pop(context); // cerrar el progress
-
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Mis Horarios Asignados"),
-                            content: horarios.isEmpty
-                                ? const Text("No tienes horarios asignados.")
-                                : SizedBox(
-                                    width: double.maxFinite,
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      itemCount: horarios.length,
-                                      itemBuilder: (context, i) {
-                                        final h = horarios[i];
-                                        return ListTile(
-                                          leading: const Icon(Icons.schedule),
-                                          title: Text(
-                                            "${h.dia}: ${h.horaEntrada} - ${h.horaSalida}",
-                                          ),
-                                          subtitle: h.fechaAsignacion != null
-                                              ? Text(
-                                                  "Asignado el: ${h.fechaAsignacion}",
-                                                )
-                                              : null,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("Cerrar"),
-                              ),
-                            ],
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AlertDialog(
+                          title: Text("Mis asistencias"),
+                          content: Text(
+                            "Funcionalidad próximamente disponible.",
                           ),
-                        );
-                      } catch (e) {
-                        Navigator.pop(context); // cerrar progress si hubo error
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error al cargar horarios: $e'),
-                          ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -359,14 +399,14 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                         filled: true,
                         fillColor: Colors.teal[100],
                       ),
-                      value: tipoPermiso,
+                      initialValue: tipoPermiso,
                       items:
                           [
-                                'calamidad domestica',
-                                'Cita Medica',
+                                'Calamidad doméstica',
+                                'Cita Médica',
                                 'Permiso Personal',
-                                'Permiso por citacion legal o judicial',
-                                'eventos familiares',
+                                'Permiso por citación legal o judicial',
+                                'Eventos familiares',
                               ]
                               .map(
                                 (permiso) => DropdownMenuItem(
@@ -387,6 +427,58 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                       ),
                       maxLines: 2,
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.teal[100],
+                            ),
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null)
+                                setState(() => fechaInicio = picked);
+                            },
+                            child: Text(
+                              fechaInicio == null
+                                  ? 'Fecha inicio'
+                                  : 'Inicio: ${fechaInicio!.toLocal().toString().split(' ')[0]}',
+                              style: TextStyle(color: Colors.teal[900]),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.teal[100],
+                            ),
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null)
+                                setState(() => fechaFin = picked);
+                            },
+                            child: Text(
+                              fechaFin == null
+                                  ? 'Fecha fin'
+                                  : 'Fin: ${fechaFin!.toLocal().toString().split(' ')[0]}',
+                              style: TextStyle(color: Colors.teal[900]),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               );
@@ -394,9 +486,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancelar',
                 style: TextStyle(color: Colors.teal[900]),
@@ -429,18 +519,22 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                     0,
                     10,
                   ),
+                  'Fecha_inicio': fechaInicio?.toIso8601String().substring(
+                    0,
+                    10,
+                  ),
+                  'Fecha_fin': fechaFin?.toIso8601String().substring(0, 10),
                 };
 
                 try {
                   final idTipoPermiso = await ApiService.crearPermiso(
                     permisoData,
                   );
-
-                  // crear notificaciones (empleado + admin)
                   await ApiService.crearNotificacionEmpleado({
                     'ID_Usuario': widget.idUsuario,
                     'ID_EstadoPermiso': 1,
-                    'Mensaje': 'Solicitud de permiso enviada: $tipoPermiso',
+                    'Mensaje':
+                        'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
                     'FechaEnvio': DateTime.now().toIso8601String().substring(
                       0,
                       10,

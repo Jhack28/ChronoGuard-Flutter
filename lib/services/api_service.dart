@@ -7,6 +7,31 @@ import '../models/estado_permisos.dart';
 import 'dart:convert';
 
 class ApiService {
+  // Cambiar contraseña de usuario
+  static Future<void> cambiarContrasena(
+    int idUsuario,
+    String actual,
+    String nueva,
+  ) async {
+    final url = Uri.parse('$baseUrl/cambiar-contrasena');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'idUsuario': idUsuario,
+        'contrasenaActual': actual,
+        'nuevaContrasena': nueva,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Error al cambiar contraseña: ${response.body}');
+    }
+    final body = jsonDecode(response.body);
+    if (body['success'] != true) {
+      throw Exception(body['message'] ?? 'No se pudo cambiar la contraseña');
+    }
+  }
+
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://172.17.253.7:3000',
@@ -348,6 +373,7 @@ class ApiService {
       final response = await http.head(Uri.parse(baseUrl));
       return response.statusCode == 200;
     } catch (e) {
+      print("❌ Error al verificar conexión: $e");
       return false;
     }
   }
@@ -355,55 +381,39 @@ class ApiService {
   // Crear permiso
   static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/permisos'),
+      Uri.parse('$baseUrl'),
       body: jsonEncode(permisoData),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (res.statusCode == 200 || res.statusCode == 201) {
-      // El backend puede devolver distintos nombres para el id (idPermiso, insertId, id, ID, etc.).
-      final body = res.body;
-      try {
-        final decoded = body.isNotEmpty ? jsonDecode(body) : null;
-        if (decoded is Map<String, dynamic>) {
-          final possibleKeys = [
-            'idPermiso',
-            'id_permiso',
-            'idPermisoInsert',
-            'insertId',
-            'insert_id',
-            'ID',
-            'id',
-          ];
-
-          for (final k in possibleKeys) {
-            if (decoded.containsKey(k)) {
-              final val = decoded[k];
-              if (val is int) return val;
-              if (val is String) {
-                final parsed = int.tryParse(val);
-                if (parsed != null) return parsed;
-              }
-            }
-          }
-        }
-
-        // Si la respuesta es simplemente un número (p.ej. "123")
-        if (decoded is int) return decoded;
-        if (decoded is String) {
-          final parsed = int.tryParse(decoded);
-          if (parsed != null) return parsed;
-        }
-
-        throw Exception('No se encontró campo de id en la respuesta: $body');
-      } catch (e) {
-        throw Exception(
-          'Error al parsear respuesta de crearPermiso: $e | body=${res.body}',
-        );
-      }
+      return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
     }
+    throw Exception('Error al crear permiso: ${res.body}');
+  }
 
-    throw Exception('Error al crear permiso: ${res.statusCode} ${res.body}');
+  Future<int> solicitarPermiso({
+    required int idUsuario,
+    required int idDepartamento,
+    required String tipo,
+    required String mensaje,
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+  }) async {
+    final permiso = {
+      "ID_Usuario": idUsuario,
+      "ID_Departamento": idDepartamento,
+      "tipo": tipo,
+      "mensaje": mensaje,
+      "Fecha_inicio": fechaInicio.toIso8601String().split('T')[0],
+      "Fecha_fin": fechaFin.toIso8601String().split('T')[0],
+    };
+
+    print("📤 Enviando permiso: $permiso"); // Debug para verificar
+    print("➡️ ID Usuario: $idUsuario");
+    print("➡️ ID Departamento: $idDepartamento"); // 👈 DEBUG
+
+    return await ApiService.crearPermiso(permiso);
   }
 
   // Crear notificación para empleado
@@ -493,7 +503,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> fetchEmpleadoStats(int idUsuario) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/empleado/stats/$idUsuario'),
+      Uri.parse('$baseUrl/empleado/$idUsuario/estadisticas'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
@@ -502,8 +512,22 @@ class ApiService {
     }
   }
 
-  // Alias por compatibilidad: la implementación principal es `fetchPermisos`
-  static Future<List<Permiso>> fetchPermiso() => fetchPermisos();
+  static Future<List<Permiso>> fetchPermiso() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/permisos/lista'));
+      if (response.statusCode == 200) {
+        final body = response.body.isNotEmpty ? response.body : '[]';
+        final List<dynamic> data = jsonDecode(body);
+        return data.map((json) => Permiso.fromJson(json)).toList();
+      } else {
+        print('Error al cargar permisos: código ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('Error en fetchPermisos: $e');
+      return [];
+    }
+  }
 
   // Actualizar estado del permiso especificado
   static Future<void> actualizarEstadoPermisos(
