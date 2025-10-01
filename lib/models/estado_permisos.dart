@@ -20,20 +20,59 @@ class Permiso {
     required this.departamento,
     required this.estadoPermiso,
   });
-  
+
   factory Permiso.fromJson(Map<String, dynamic> json) {
-  return Permiso(
-    idTipoPermiso: json['ID_tipoPermiso'] ?? 0,
-    tipoPermiso: json['tipoPermiso'] ?? '',
-    mensaje: json['mensaje'] ?? '',
-    fechaSolicitud: json['Fecha_Solicitud'] != null
-        ? DateTime.parse(json['Fecha_Solicitud'])
-        : DateTime.now(),
-    idUsuario: json['ID_Usuario'] ?? 0,
-    nombreUsuario: json['Nombre'] ?? '',
-    emailUsuario: json['Email'] ?? '',
-    departamento: json['departamento'] ?? '',
-    estadoPermiso: json['estadoPermiso'] ?? '',
-  );
+    // Soportar múltiples formas de respuesta del backend (v1/v2)
+    final id =
+        json['ID_tipoPermiso'] ??
+        json['ID_tipoPermiso'.toLowerCase()] ??
+        json['id'] ??
+        0;
+    final tipo = json['tipoPermiso'] ?? json['tipo'] ?? '';
+    final mensaje = json['mensaje'] ?? json['Mensaje'] ?? '';
+    DateTime fecha;
+    try {
+      final rawFecha =
+          json['Fecha_Solicitud'] ??
+          json['Fecha_Solicitud'.toLowerCase()] ??
+          json['Fecha_Solicitud'.toUpperCase()];
+      fecha = rawFecha != null
+          ? DateTime.parse(rawFecha.toString())
+          : DateTime.now();
+    } catch (e) {
+      fecha = DateTime.now();
+    }
+    final idUsr =
+        json['ID_Usuario'] ??
+        json['ID_Usuario'.toLowerCase()] ??
+        json['ID'] ??
+        json['idUsuario'] ??
+        0;
+    final nombre =
+        json['Nombre'] ??
+        json['nombre'] ??
+        json['nombre_usuario'] ??
+        json['nombre_usuario'.toLowerCase()] ??
+        '';
+    final email = json['Email'] ?? json['email'] ?? '';
+    final dept =
+        json['departamento'] ??
+        json['Nombre_Departamento'] ??
+        json['Nombre_Departamento'.toLowerCase()] ??
+        '';
+    final estado =
+        json['estadoPermiso'] ?? json['Estado'] ?? json['estado'] ?? '';
+
+    return Permiso(
+      idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
+      tipoPermiso: tipo.toString(),
+      mensaje: mensaje.toString(),
+      fechaSolicitud: fecha,
+      idUsuario: idUsr is int ? idUsr : int.tryParse(idUsr.toString()) ?? 0,
+      nombreUsuario: nombre.toString(),
+      emailUsuario: email.toString(),
+      departamento: dept.toString(),
+      estadoPermiso: estado.toString(),
+    );
   }
 }

@@ -120,6 +120,26 @@ class ApiService {
     }
   }
 
+  // Registrar entrada rápida (llegada)
+  static Future<bool> registrarEntrada(int idUsuario, {String? nombre}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/asistencia/entrada'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'ID_Usuario': idUsuario, 'Nombre': nombre}),
+    );
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
+
+  // Registrar salida rápida (salida)
+  static Future<bool> registrarSalida(int idUsuario) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/asistencia/salida'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'ID_Usuario': idUsuario}),
+    );
+    return response.statusCode == 200;
+  }
+
   /// Generar reporte
   static Future<Map<String, dynamic>> generarReporte() async {
     final response = await http.get(Uri.parse("$baseUrl/reporte"));
@@ -133,14 +153,36 @@ class ApiService {
 
   /// Obtener lista de permisos con estados completos
   static Future<List<Permiso>> fetchPermisos() async {
-    final response = await http.get(Uri.parse('$baseUrl/permisos/lista'));
+    // Intentar primero el endpoint `/permisos/lista`, si no funciona
+    // intentamos `/permisos` y finalmente devolvemos la unión (única por id).
+    final endpoints = [
+      Uri.parse('$baseUrl/permisos/lista'),
+      Uri.parse('$baseUrl/permisos'),
+    ];
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => Permiso.fromJson(item)).toList();
-    } else {
-      throw Exception('Error al cargar permisos');
+    final Map<int, Permiso> merged = {};
+
+    for (final uri in endpoints) {
+      try {
+        final response = await http.get(uri);
+        if (response.statusCode != 200) continue;
+        final body = response.body.isNotEmpty ? response.body : '[]';
+        final List<dynamic> data = jsonDecode(body);
+        for (final item in data) {
+          try {
+            final permiso = Permiso.fromJson(item as Map<String, dynamic>);
+            merged[permiso.idTipoPermiso] = permiso;
+          } catch (e) {
+            print('Warning parsing permiso item: $e');
+          }
+        }
+      } catch (e) {
+        print('Warning calling $uri: $e');
+        continue;
+      }
     }
+
+    return merged.values.toList();
   }
 
   /// Actualizar estado del permiso
@@ -381,15 +423,52 @@ class ApiService {
   // Crear permiso
   static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
     final res = await http.post(
-      Uri.parse('$baseUrl'),
+      Uri.parse('$baseUrl/permisos'),
       body: jsonEncode(permisoData),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (res.statusCode == 200 || res.statusCode == 201) {
-      return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
+      try {
+        final body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
+        // soportar varias formas que pueda devolver el backend
+        final possibleIds = [
+          body['idPermiso'],
+          body['insertId'],
+          body['id'],
+          body['ID'],
+          body['ID_tipoPermiso'],
+        ];
+        for (final v in possibleIds) {
+          if (v == null) continue;
+          final parsed = v is int ? v : int.tryParse(v.toString());
+          if (parsed != null) return parsed;
+        }
+
+        // si no encontramos, intentar si el body es simplemente un objeto con insertId en nested result
+        if (body is Map &&
+            body.containsKey('result') &&
+            body['result'] is Map) {
+          final r = body['result'];
+          final candidate = r['insertId'] ?? r['id'] ?? r['ID'];
+          if (candidate != null)
+            return candidate is int
+                ? candidate
+                : int.parse(candidate.toString());
+        }
+
+        // fallback: devolver 0 pero avisar
+        print(
+          'Warning: crearPermiso no pudo obtener id desde la respuesta: ${res.body}',
+        );
+        return 0;
+      } catch (e) {
+        throw Exception(
+          'Error parseando respuesta de crearPermiso: $e -- body=${res.body}',
+        );
+      }
     }
-    throw Exception('Error al crear permiso: ${res.body}');
+    throw Exception('Error al crear permiso: ${res.statusCode} ${res.body}');
   }
 
   Future<int> solicitarPermiso({
@@ -527,6 +606,16 @@ class ApiService {
       print('Error en fetchPermisos: $e');
       return [];
     }
+  }
+
+  /// Obtener lista de departamentos
+  static Future<List<Map<String, dynamic>>> fetchDepartamentos() async {
+    final response = await http.get(Uri.parse('$baseUrl/departamento/lista'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    throw Exception('Error al obtener departamentos: ${response.body}');
   }
 
   // Actualizar estado del permiso especificado

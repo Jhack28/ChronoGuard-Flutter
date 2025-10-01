@@ -15,6 +15,7 @@ class EmpleadoHomeScreen extends StatefulWidget {
 class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
   Usuario? _usuario;
   Map<String, dynamic>? _stats;
+  bool _isLoading = false;
 
   final TextEditingController descripcionCtrl = TextEditingController();
 
@@ -31,6 +32,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
   }
 
   Future<void> _loadData() async {
+    setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
         ApiService.fetchEmpleadoStats(widget.idUsuario),
@@ -42,9 +44,10 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
         _usuario = results[1] as Usuario;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
       // Solo mostrar el error en consola, no en pantalla
       print('Error al cargar datos: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -102,193 +105,332 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
         ],
       ),
 
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.teal, Colors.lightBlueAccent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.all(16),
-              child: Text(
-                fraseMotivacional,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontStyle: FontStyle.italic,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.teal, Colors.lightBlueAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  child: Text(
+                    fraseMotivacional,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStatCard(
-                    Icons.pending_actions,
-                    "Permisos",
-                    _stats != null
-                        ? (_stats!['permisos']?.toString() ??
-                              _stats!['permisosCount']?.toString() ??
-                              '0')
-                        : '0',
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                  _buildStatCard(
-                    Icons.timer_off,
-                    "Inasistencias",
-                    _stats != null
-                        ? (_stats!['inasistencias']?.toString() ??
-                              _stats!['inasistenciasCount']?.toString() ??
-                              '0')
-                        : '0',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 16),
-                children: [
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.note_add,
-                    color: Colors.white,
-                    title: "Solicitar permiso",
-                    onTap: () => _mostrarModalPermiso(context),
-                  ),
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.lock_reset,
-                    color: Colors.orange[200]!,
-                    title: "Modificar contraseña",
-                    onTap: () {
-                      final actualCtrl = TextEditingController();
-                      final nuevaCtrl = TextEditingController();
-                      final repetirCtrl = TextEditingController();
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Modificar contraseña"),
-                          content: StatefulBuilder(
-                            builder: (context, setState) {
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                    controller: actualCtrl,
-                                    obscureText: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Contraseña actual',
-                                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          // Registrar llegada
+                          setState(() => _isLoading = true);
+                          try {
+                            final ok = await ApiService.registrarEntrada(
+                              widget.idUsuario,
+                              nombre: _usuario?.nombre,
+                            );
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Entrada registrada correctamente',
                                   ),
-                                  const SizedBox(height: 10),
-                                  TextField(
-                                    controller: nuevaCtrl,
-                                    obscureText: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Nueva contraseña',
-                                    ),
+                                ),
+                              );
+                              await _loadData();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No se pudo registrar la entrada',
                                   ),
-                                  const SizedBox(height: 10),
-                                  TextField(
-                                    controller: repetirCtrl,
-                                    obscureText: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Repetir nueva contraseña',
-                                    ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al registrar entrada: $e'),
+                              ),
+                            );
+                          } finally {
+                            setState(() => _isLoading = false);
+                          }
+                        },
+                        child: _buildStatCard(
+                          Icons.login,
+                          "Marcar entrada",
+                          _stats != null
+                              ? (_stats!['permisos']?.toString() ??
+                                    _stats!['permisosCount']?.toString() ??
+                                    '0')
+                              : '0',
+                        ),
+                      ),
+
+                      GestureDetector(
+                        onTap: () async {
+                          // Registrar salida
+                          setState(() => _isLoading = true);
+                          try {
+                            final ok = await ApiService.registrarSalida(
+                              widget.idUsuario,
+                            );
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Salida registrada correctamente',
+                                  ),
+                                ),
+                              );
+                              await _loadData();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No se encontró entrada abierta para cerrar',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al registrar salida: $e'),
+                              ),
+                            );
+                          } finally {
+                            setState(() => _isLoading = false);
+                          }
+                        },
+                        child: _buildStatCard(
+                          Icons.logout,
+                          "Marcar salida",
+                          _stats != null
+                              ? (_stats!['inasistencias']?.toString() ??
+                                    _stats!['inasistenciasCount']?.toString() ??
+                                    '0')
+                              : '0',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    children: [
+                      _buildMenuCard(
+                        context,
+                        icon: Icons.note_add,
+                        color: Colors.white,
+                        title: "Solicitar permiso",
+                        onTap: () => _mostrarModalPermiso(context),
+                      ),
+                      _buildMenuCard(
+                        context,
+                        icon: Icons.lock_reset,
+                        color: Colors.orange[200]!,
+                        title: "Modificar contraseña",
+                        onTap: () {
+                          final actualCtrl = TextEditingController();
+                          final nuevaCtrl = TextEditingController();
+                          final repetirCtrl = TextEditingController();
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Modificar contraseña"),
+                              content: StatefulBuilder(
+                                builder: (context, setState) {
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: actualCtrl,
+                                        obscureText: true,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Contraseña actual',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      TextField(
+                                        controller: nuevaCtrl,
+                                        obscureText: true,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Nueva contraseña',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      TextField(
+                                        controller: repetirCtrl,
+                                        obscureText: true,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Repetir nueva contraseña',
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final actual = actualCtrl.text.trim();
+                                    final nueva = nuevaCtrl.text.trim();
+                                    final repetir = repetirCtrl.text.trim();
+                                    if (actual.isEmpty ||
+                                        nueva.isEmpty ||
+                                        repetir.isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Completa todos los campos',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    if (nueva != repetir) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Las contraseñas no coinciden',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    try {
+                                      await ApiService.cambiarContrasena(
+                                        widget.idUsuario,
+                                        actual,
+                                        nueva,
+                                      );
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Contraseña modificada correctamente',
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('Guardar'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      _buildMenuCard(
+                        context,
+                        icon: Icons.calendar_month,
+                        color: Colors.lightBlue[100]!,
+                        title: "Mis horarios",
+                        onTap: () async {
+                          try {
+                            final horarios =
+                                await ApiService.obtenerHorariosUsuario(
+                                  widget.idUsuario,
+                                );
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Mis Horarios Asignados"),
+                                content: horarios.isEmpty
+                                    ? const Text(
+                                        "No tienes horarios asignados.",
+                                      )
+                                    : SizedBox(
+                                        width: double.maxFinite,
+                                        child: ListView.builder(
+                                          shrinkWrap: true,
+                                          itemCount: horarios.length,
+                                          itemBuilder: (context, i) {
+                                            final h = horarios[i];
+                                            return ListTile(
+                                              title: Text(
+                                                "${h.dia}: ${h.horaEntrada} - ${h.horaSalida}",
+                                              ),
+                                              subtitle:
+                                                  h.fechaAsignacion != null
+                                                  ? Text(
+                                                      "Asignado el: ${h.fechaAsignacion}",
+                                                    )
+                                                  : null,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("Cerrar"),
                                   ),
                                 ],
-                              );
-                            },
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancelar'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () async {
-                                final actual = actualCtrl.text.trim();
-                                final nueva = nuevaCtrl.text.trim();
-                                final repetir = repetirCtrl.text.trim();
-                                if (actual.isEmpty ||
-                                    nueva.isEmpty ||
-                                    repetir.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Completa todos los campos',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (nueva != repetir) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Las contraseñas no coinciden',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                try {
-                                  await ApiService.cambiarContrasena(
-                                    widget.idUsuario,
-                                    actual,
-                                    nueva,
-                                  );
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Contraseña modificada correctamente',
-                                      ),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e')),
-                                  );
-                                }
-                              },
-                              child: const Text('Guardar'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al obtener horarios: $e'),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.calendar_month,
-                    color: Colors.lightBlue[100]!,
-                    title: "Mis asistencias",
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const AlertDialog(
-                          title: Text("Mis asistencias"),
-                          content: Text(
-                            "Funcionalidad próximamente disponible.",
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          if (_isLoading)
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Color.fromRGBO(0, 0, 0, 0.35),
+                child: Center(child: CircularProgressIndicator()),
               ),
             ),
-          ],
-        ),
+        ],
       ),
 
       bottomNavigationBar: const BottomAppBar(
@@ -316,14 +458,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
           children: [
             Icon(icon, color: Colors.teal, size: 30),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
+            // Valor oculto por diseño: solo mostrar icono y título
             Text(
               title,
               style: const TextStyle(fontSize: 13, color: Colors.black54),
@@ -377,6 +512,28 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
 
   void _mostrarModalPermiso(BuildContext context) {
     String? tipoPermiso;
+    DateTime? fechaInicio;
+    DateTime? fechaFin;
+    // intentar determinar id_departamento inicial a partir del usuario
+    final idDepRawInit = _usuario?.id_departamento;
+    int? initialIdDepartamento = idDepRawInit is int
+        ? idDepRawInit
+        : int.tryParse(idDepRawInit?.toString() ?? '');
+    if ((initialIdDepartamento == null || initialIdDepartamento == 0) &&
+        _usuario?.departamento != null) {
+      final rawDept = _usuario!.departamento.toString().trim().toLowerCase();
+      const deptMap = {
+        'lavado': 1,
+        'planchado': 2,
+        'secado': 3,
+        'transporte': 4,
+      };
+      if (deptMap.containsKey(rawDept))
+        initialIdDepartamento = deptMap[rawDept];
+    }
+
+    List<Map<String, dynamic>> departamentosCache = [];
+    int? selectedDepartamentoId;
 
     showDialog(
       context: context,
@@ -418,6 +575,53 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                       onChanged: (val) => setState(() => tipoPermiso = val),
                     ),
                     const SizedBox(height: 12),
+                    // Si no tenemos id_departamento conocido, pedir selección obligatoria
+                    if (initialIdDepartamento == null ||
+                        initialIdDepartamento == 0) ...[
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: departamentosCache.isEmpty
+                            ? ApiService.fetchDepartamentos()
+                            : Future.value(departamentosCache),
+                        builder: (context, snap) {
+                          if (snap.connectionState == ConnectionState.waiting) {
+                            return const SizedBox(
+                              height: 48,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          if (snap.hasError) {
+                            return const Text(
+                              'No se pudo cargar departamentos',
+                            );
+                          }
+                          departamentosCache = snap.data ?? [];
+                          return DropdownButtonFormField<int>(
+                            decoration: InputDecoration(
+                              labelText: 'Departamento',
+                              filled: true,
+                              fillColor: Colors.teal[100],
+                            ),
+                            items: departamentosCache
+                                .map(
+                                  (d) => DropdownMenuItem<int>(
+                                    value: (d['id'] as num).toInt(),
+                                    child: Text(d['tipo'].toString()),
+                                  ),
+                                )
+                                .toList(),
+                            value: selectedDepartamentoId,
+                            onChanged: (v) {
+                              setState(() {
+                                selectedDepartamentoId = v;
+                              });
+                            },
+                            validator: (v) =>
+                                v == null ? 'Seleccione departamento' : null,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     TextField(
                       controller: descripcionCtrl,
                       decoration: InputDecoration(
@@ -504,53 +708,103 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                   return;
                 }
 
-                // convertir id_departamento a int de forma segura
-                final idDepRaw = _usuario?.id_departamento;
-                final idDepartamento = idDepRaw is int
-                    ? idDepRaw
-                    : int.tryParse(idDepRaw?.toString() ?? '') ?? 0;
+                // determinar id_departamento final
+                int? idDepartamento = initialIdDepartamento;
+                if ((idDepartamento == null || idDepartamento == 0) &&
+                    selectedDepartamentoId != null) {
+                  idDepartamento = selectedDepartamentoId;
+                }
+                // último recurso: volver a mapear por nombre si hay
+                if ((idDepartamento == null || idDepartamento == 0) &&
+                    _usuario?.departamento != null) {
+                  final rawDept = _usuario!.departamento
+                      .toString()
+                      .trim()
+                      .toLowerCase();
+                  const deptMap = {
+                    'lavado': 1,
+                    'planchado': 2,
+                    'secado': 3,
+                    'transporte': 4,
+                  };
+                  if (deptMap.containsKey(rawDept))
+                    idDepartamento = deptMap[rawDept];
+                }
 
-                final permisoData = {
+                // si aún no hay departamento, avisar al usuario y no enviar
+                if (idDepartamento == null || idDepartamento == 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Debe seleccionar un departamento antes de enviar',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                final permisoData = <String, dynamic>{
                   'ID_Usuario': widget.idUsuario,
-                  'id_departamento': idDepartamento,
                   'tipo': tipoPermiso,
                   'mensaje': descripcionCtrl.text,
                   'Fecha_Solicitud': DateTime.now().toIso8601String().substring(
                     0,
                     10,
                   ),
-                  'Fecha_inicio': fechaInicio?.toIso8601String().substring(
-                    0,
-                    10,
-                  ),
-                  'Fecha_fin': fechaFin?.toIso8601String().substring(0, 10),
                 };
 
+                // idDepartamento ya está validado arriba; asignar
+                permisoData['id_departamento'] = idDepartamento;
+
+                // fechas opcionales
+                if (fechaInicio != null) {
+                  permisoData['Fecha_inicio'] = fechaInicio!
+                      .toIso8601String()
+                      .substring(0, 10);
+                }
+                if (fechaFin != null) {
+                  permisoData['Fecha_fin'] = fechaFin!
+                      .toIso8601String()
+                      .substring(0, 10);
+                }
+
                 try {
+                  // Debug: mostrar payload antes de enviarlo (útil si hay errores de FK)
+                  print('Permiso payload: $permisoData');
                   final idTipoPermiso = await ApiService.crearPermiso(
                     permisoData,
                   );
-                  await ApiService.crearNotificacionEmpleado({
-                    'ID_Usuario': widget.idUsuario,
-                    'ID_EstadoPermiso': 1,
-                    'Mensaje':
-                        'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
-                    'FechaEnvio': DateTime.now().toIso8601String().substring(
-                      0,
-                      10,
-                    ),
-                    'Estado': 'Pendiente',
-                  });
 
-                  await ApiService.crearNotificacionAdmin({
-                    'Fecha_Solicitud': DateTime.now()
-                        .toIso8601String()
-                        .substring(0, 10),
-                    'ID_Usuario': widget.idUsuario,
-                    'ID_tipoPermiso': idTipoPermiso,
-                    'tipo': tipoPermiso,
-                    'Correo': _usuario?.email,
-                  });
+                  // crear notificaciones pero no bloquear el flujo si fallan
+                  try {
+                    await ApiService.crearNotificacionEmpleado({
+                      'ID_Usuario': widget.idUsuario,
+                      'ID_EstadoPermiso': 1,
+                      'Mensaje':
+                          'Solicitud de permiso enviada: ${tipoPermiso ?? ''}',
+                      'FechaEnvio': DateTime.now().toIso8601String().substring(
+                        0,
+                        10,
+                      ),
+                      'Estado': 'Pendiente',
+                    });
+                  } catch (e) {
+                    print('Warning: fallo crearNotificacionEmpleado: $e');
+                  }
+
+                  try {
+                    await ApiService.crearNotificacionAdmin({
+                      'Fecha_Solicitud': DateTime.now()
+                          .toIso8601String()
+                          .substring(0, 10),
+                      'ID_Usuario': widget.idUsuario,
+                      'ID_tipoPermiso': idTipoPermiso,
+                      'tipo': tipoPermiso,
+                      'Correo': _usuario?.email,
+                    });
+                  } catch (e) {
+                    print('Warning: fallo crearNotificacionAdmin: $e');
+                  }
 
                   descripcionCtrl.clear();
                   Navigator.pop(context);
@@ -559,7 +813,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                       content: Text('Permiso solicitado correctamente'),
                     ),
                   );
-                  // actualizar estadísticas/local state si es necesario
+                  // actualizar estadísticas/local state
                   _loadData();
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -78,14 +78,33 @@ async function connectDb() {
 connectDb().then(() => {
   console.log('Inicializando tablas y endpoints...');
 
-  
+  (async () => {
+    try {
+      // Asegurar que la tabla Asistencias exista (evita errores si la DB no la contiene)
+      const createAsistencias = `
+        CREATE TABLE IF NOT EXISTS Asistencias (
+          ID_Asistencia INT PRIMARY KEY AUTO_INCREMENT,
+          ID_Usuario INT NOT NULL,
+          Nombre VARCHAR(200) DEFAULT NULL,
+          Entrada DATETIME DEFAULT NULL,
+          Salida DATETIME DEFAULT NULL,
+          Estado VARCHAR(50) DEFAULT NULL,
+          FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+      `;
+      await db.promise().query(createAsistencias);
+      console.log('Verificado: tabla Asistencias existe (o fue creada).');
+    } catch (initErr) {
+      console.error('Error al asegurar existencia de tabla Asistencias:', initErr);
+    }
 
-  // Iniciar el servidor en puerto 3000
-  const PORT = 3000;
-  const HOST = process.env.API_HOST || '172.17.253.7'; // <- escucha en la IP del PC/lan
-  app.listen(PORT, HOST, () => {
-    console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
-  });
+    // Iniciar el servidor en puerto 3000
+    const PORT = 3000;
+    const HOST = process.env.API_HOST || '172.17.253.7'; // <- escucha en la IP del PC/lan
+    app.listen(PORT, HOST, () => {
+      console.log(`API escuchando en http://${HOST}:${PORT}  — accesible desde la LAN en http://${HOST}:${PORT}`);
+    });
+  })();
 });
 
 // ---------- Helpers para Horarios ----------
@@ -180,7 +199,7 @@ app.post('/login', (req, res) => {
         Estado: results[0].Estado, 
       });
     } else {
-      return res.json({ success: false, message: 'Credenciales inválidas' });
+      return res.json({ success: false, message: 'Cuenta Inactiva' });
     }
   }
 );
@@ -743,6 +762,96 @@ app.post('/asistencia/registrar', (req, res) => {
   );
 });
 
+// Nota: la ruta `/asistencia/entrada` se define más abajo en una versión asincrónica
+// y robusta que utiliza promesas (db.promise()). La definición anterior fue eliminada
+// para evitar manejo inconsistente y rutas duplicadas.
+
+// Mejor versión asincrónica y más robusta de /asistencia/entrada
+app.post('/asistencia/entrada', async (req, res) => {
+  try {
+    const ID_Usuario = req.body?.ID_Usuario || req.body?.id || req.body?.idUsuario;
+    let Nombre = req.body?.Nombre || req.body?.nombre || null;
+
+    if (!ID_Usuario) return res.status(400).json({ error: 'Falta ID_Usuario' });
+
+    // Normalizar a número
+    const idNum = parseInt(ID_Usuario, 10);
+    if (isNaN(idNum)) return res.status(400).json({ error: 'ID_Usuario inválido' });
+
+    // Evitar doble entrada abierta (Salida IS NULL)
+    const [openRows] = await db.promise().query(
+      `SELECT ID_Asistencia FROM Asistencias WHERE ID_Usuario = ? AND Salida IS NULL`,
+      [idNum]
+    );
+    if (openRows && openRows.length > 0) {
+      return res.status(409).json({ error: 'Ya existe una entrada abierta para este usuario' });
+    }
+
+    // Si no tenemos Nombre, intentamos obtenerlo desde Usuarios
+    if (!Nombre) {
+      try {
+        const [userRows] = await db.promise().query('SELECT Nombre FROM Usuarios WHERE ID_Usuario = ?', [idNum]);
+        if (userRows && userRows.length > 0) Nombre = userRows[0].Nombre;
+      } catch (errU) {
+        console.warn('No se pudo resolver Nombre desde Usuarios:', errU.message || errU);
+      }
+    }
+
+    const entradaVal = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const [insertResult] = await db.promise().query(
+      `INSERT INTO Asistencias (ID_Usuario, Nombre, Entrada, Estado) VALUES (?, ?, ?, ?)`,
+      [idNum, Nombre || null, entradaVal, 'Entrada']
+    );
+
+    console.log(`/asistencia/entrada -> ID_Usuario=${idNum} insertId=${insertResult.insertId}`);
+    return res.status(201).json({ message: 'Entrada registrada', id: insertResult.insertId });
+  } catch (err) {
+    console.error('/asistencia/entrada error (async):', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+/**
+ * Registrar salida: actualiza la última asistencia sin Salida para el usuario
+ * POST /asistencia/salida
+ * body: { ID_Usuario }
+ */
+app.post('/asistencia/salida', async (req, res) => {
+  try {
+    // Aceptar varias formas del ID (ID_Usuario, id, idUsuario) y normalizar
+    const rawId = req.body?.ID_Usuario || req.body?.id || req.body?.idUsuario;
+    console.log('/asistencia/salida body ->', req.body);
+    if (!rawId) return res.status(400).json({ error: 'Falta ID_Usuario' });
+
+    const ID_Usuario = parseInt(rawId, 10);
+    if (isNaN(ID_Usuario)) return res.status(400).json({ error: 'ID_Usuario inválido' });
+
+    // Primero obtener la ID_Asistencia de la última entrada abierta
+    // Ampliamos la condición para cubrir casos donde Estado = 'Entrada' aunque Salida no sea null por inconsistencias.
+    const [rows] = await db.promise().query(
+      `SELECT ID_Asistencia, Salida, Estado FROM Asistencias WHERE ID_Usuario = ? AND (Salida IS NULL OR Estado = 'Entrada') ORDER BY ID_Asistencia DESC LIMIT 1`,
+      [ID_Usuario]
+    );
+    console.log('/asistencia/salida -> filas encontradas:', rows && rows.length ? rows.length : 0, rows && rows[0] ? rows[0] : 'n/a');
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'No se encontró entrada abierta para cerrar' });
+    }
+
+  const idAsistencia = rows[0].ID_Asistencia;
+    const updateSql = `UPDATE Asistencias SET Salida = NOW(), Estado = 'Salida' WHERE ID_Asistencia = ?`;
+    const [result] = await db.promise().query(updateSql, [idAsistencia]);
+    if (result && result.affectedRows && result.affectedRows > 0) {
+      console.log(`/asistencia/salida -> ID_Usuario=${ID_Usuario} ID_Asistencia=${idAsistencia}`);
+      return res.json({ message: 'Salida registrada', idAsistencia });
+    }
+    return res.status(500).json({ error: 'No se pudo actualizar la salida' });
+  } catch (err) {
+    console.error('/asistencia/salida error:', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 /**
  * @swagger
  * /horarios/registrar:
@@ -1159,6 +1268,27 @@ app.get('/horarios/:idUsuario', (req, res) => {
   });
 });
 
+
+/**
+ * @swagger
+ * /departamento/lista:
+ *   get:
+ *     summary: Lista los departamentos disponibles
+ *     responses:
+ *       200:
+ *         description: Lista de departamentos
+ */
+app.get('/departamento/lista', (req, res) => {
+  const sql = `SELECT id_departamento AS id, tipo FROM Departamento ORDER BY id_departamento`;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener departamentos:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
+  });
+});
+
 /**
  * @swagger
  * /horarios/{id}:
@@ -1337,22 +1467,27 @@ app.delete("/horarios/:id", (req, res) => {
  */
 app.get('/permisos/lista', (req, res) => {
   const sql = `
-    SELECT tp.ID_tipoPermiso, tp.tipo AS tipoPermiso, tp.mensaje, tp.Fecha_Solicitud,
-    u.ID_Usuario, u.Nombre, u.Email,
-    d.tipo AS departamento,
-    ep.Estado as estadoPermiso
+    SELECT tp.ID_tipoPermiso,
+          tp.tipo AS tipoPermiso,
+          tp.mensaje,
+          tp.Fecha_Solicitud,
+          u.ID_Usuario,
+          u.Nombre,
+          u.Email,
+          d.tipo AS departamento,
+          COALESCE(ep.Estado, 'Pendiente') AS estadoPermiso
     FROM TipoPermiso tp
-    JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
-    JOIN Departamento d ON tp.id_departamento = d.id_departamento
-    JOIN Notificaciones n ON n.ID_Usuario = u.ID_Usuario AND n.ID_tipoPermiso = tp.ID_tipoPermiso
-    JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
+    LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+    LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
+    LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
+    LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
     ORDER BY 
-    CASE 
-      WHEN ep.Estado = 'Pendiente' THEN 0 
-      WHEN ep.Estado = 'Aprobado' THEN 1 
-      WHEN ep.Estado = 'Rechazado' THEN 2 
-      ELSE 3 
-    END,
+      CASE 
+        WHEN ep.Estado = 'Pendiente' THEN 0 
+        WHEN ep.Estado = 'Aprobado' THEN 1 
+        WHEN ep.Estado = 'Rechazado' THEN 2 
+        ELSE 3 
+      END,
     tp.Fecha_Solicitud DESC
   `;
 
@@ -1489,7 +1624,9 @@ app.put('/permisos/:idPermiso/estado', (req, res) => {
  */
 app.post('/permisos', async (req, res) => {
   try {
-    const { ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud } = req.body;
+    // Extraer datos del body y validar
+    const { ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud } = req.body || {};
+    console.log('POST /permisos payload ->', req.body);
 
     if (!ID_Usuario || !tipo || !mensaje || !Fecha_Solicitud) {
       return res.status(400).json({ error: 'Faltan datos obligatorios', dataRecibida: req.body });
@@ -1502,6 +1639,29 @@ app.post('/permisos', async (req, res) => {
     );
 
     const idPermiso = result.insertId;
+    console.log('Nuevo TipoPermiso insertado idPermiso=', idPermiso);
+
+    // Intentar crear una notificación inicial para que el permiso aparezca
+    // en los listados que dependen de la tabla Notificaciones.
+  try {
+      // Buscar el id de estado 'Pendiente' si existe
+      const [estadoRows] = await db.promise().query(
+        'SELECT ID_EstadoPermiso FROM EstadoPermisos WHERE Estado = ?',
+        ['Pendiente']
+      );
+      const idEstado = (estadoRows && estadoRows.length > 0) ? estadoRows[0].ID_EstadoPermiso : null;
+
+      // Insertar notificación inicial (no hacemos fallar el flujo si esto falla)
+      const [resInsertNotif] = await db.promise().query(
+        `INSERT INTO Notificaciones (ID_tipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio, ID_EstadoPermiso)
+        VALUES (?, ?, ?, ?, NOW(), ?)`,
+        [idPermiso, ID_Usuario, 'Nueva solicitud de permiso', 'Pendiente', idEstado]
+      );
+      console.log('Notificacion insertada, insertId=', resInsertNotif.insertId);
+    } catch (errNotify) {
+      console.error('Warning: no se pudo insertar notificación inicial:', errNotify);
+      // continuar sin bloquear la respuesta
+    }
 
     // Responder con éxito y el id insertado
     res.status(201).json({ idPermiso });
@@ -1553,7 +1713,7 @@ app.post('/permisos', async (req, res) => {
  */
 app.get('/permisos', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.promise().query(`
       SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
       FROM TipoPermiso tp
       JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
@@ -1615,7 +1775,7 @@ app.get('/permisos', async (req, res) => {
 app.get('/permisos/usuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.query(`
+    const [rows] = await db.promise().query(`
       SELECT tp.*, d.Nombre_Departamento
       FROM TipoPermiso tp
       JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
@@ -1674,7 +1834,7 @@ app.get('/permisos/usuario/:id', async (req, res) => {
  */
 app.get('/permisos/pendientes', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.promise().query(`
       SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
       FROM TipoPermiso tp
       JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
@@ -1746,12 +1906,12 @@ app.put('/permisos/:id/estado', async (req, res) => {
       return res.status(400).json({ error: 'Estado inválido' });
     }
 
-    await db.query(
+    await db.promise().query(
       `UPDATE TipoPermiso SET Estado = ? WHERE ID_tipoPermiso = ?`,
       [nuevoEstado, id]
     );
 
-    await db.query(
+    await db.promise().query(
       `INSERT INTO Notificaciones (ID_TipoPermiso, ID_Usuario, Mensaje, Estado, FechaEnvio)
       SELECT ?, tp.ID_Usuario, CONCAT('Tu solicitud ha sido ', ?) , 'Leída', NOW()
       FROM TipoPermiso tp WHERE tp.ID_tipoPermiso = ?`,
@@ -1796,7 +1956,7 @@ app.put('/permisos/:id/estado', async (req, res) => {
 app.delete('/permisos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(`DELETE FROM TipoPermiso WHERE ID_tipoPermiso = ?`, [id]);
+  await db.promise().query(`DELETE FROM TipoPermiso WHERE ID_tipoPermiso = ?`, [id]);
     res.json({ message: 'Permiso eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar permiso:', error);

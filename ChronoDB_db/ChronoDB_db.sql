@@ -79,6 +79,17 @@ CREATE TABLE Horarios (
   FOREIGN KEY (Asignado_Por) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
 );
 
+-- Tabla Asistencias: registros de entrada/salida de los empleados
+CREATE TABLE Asistencias (
+  ID_Asistencia INT PRIMARY KEY AUTO_INCREMENT,
+  ID_Usuario INT NULL,
+  Nombre VARCHAR(100) NULL,
+  Entrada DATETIME NULL,
+  Salida DATETIME NULL,
+  Estado VARCHAR(50) NULL,
+  FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
+);
+
 -- Inserción de Roles
 INSERT INTO Roles (tipo) VALUES ('Admin'), ('Secretaria'), ('Empleado');
 

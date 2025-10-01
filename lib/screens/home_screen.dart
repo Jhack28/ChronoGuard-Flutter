@@ -217,24 +217,35 @@ class _LoginScreenState extends State<LoginScreen> {
     String correo,
     String contrasena,
   ) async {
-    final response = await http.post(
-      Uri.parse('${ApiService.baseUrl}/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': correo, 'password': contrasena}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': correo, 'password': contrasena}),
+      );
 
-    if (response.statusCode == 200) {
-      try {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic>) return data;
-        return null;
-      } catch (e) {
-        print('Error parsing login response: $e');
-        return null;
+      // Intentar parsear el body aunque el status code no sea 200 para
+      // mostrar mensajes útiles (por ejemplo: cuenta inactiva, errores del servidor).
+      if (response.body.isNotEmpty) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data is Map<String, dynamic>) return data;
+        } catch (e) {
+          print('Error parsing login response body: $e');
+          // devolver un objeto con mensaje genérico
+          return {
+            'success': false,
+            'message': 'Respuesta inválida del servidor',
+          };
+        }
       }
-    }
 
-    return null;
+      // si el body está vacío, devolver un error claro
+      return {'success': false, 'message': 'Sin respuesta del servidor'};
+    } catch (e) {
+      print('Error comunicándose con el servidor en login: $e');
+      return null;
+    }
   }
 
   void _handleLogin() async {

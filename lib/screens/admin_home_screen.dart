@@ -64,9 +64,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         loadingUsuarios = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al cargar empleados: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al cargar empleados: $e")));
     }
   }
 
@@ -80,9 +80,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       });
     } catch (e) {
       setState(() => loadingHorarios = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar horarios: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar horarios: $e')));
     }
   }
 
@@ -92,6 +92,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
     try {
       final lista = await ApiService.fetchPermisos();
+      // Ordenar localmente: primero Pendiente, luego Aprobado, luego Rechazado
+      lista.sort((a, b) {
+        final sa = a.estadoPermiso.toLowerCase();
+        final sb = b.estadoPermiso.toLowerCase();
+        int rank(String s) {
+          if (s.contains('pend')) return 0;
+          if (s.contains('aprob')) return 1;
+          if (s.contains('rech')) return 2;
+          return 3;
+        }
+
+        return rank(sa).compareTo(rank(sb));
+      });
+
       setState(() {
         permisos = lista;
         loadingPermisos = false;
@@ -100,9 +114,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         loadingPermisos = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar permisos: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar permisos: $e')));
     }
   }
 
@@ -143,7 +157,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void _abrirModalEditar(Usuario usuario) {
     _numeroDocumentoCtrl.text = usuario.documento;
     _nombreCtrl.text = usuario.nombre;
-    _departamentoCtrl.text = usuario.rol == "Empleado" ? usuario.departamento : '';
+    _departamentoCtrl.text = usuario.rol == "Empleado"
+        ? usuario.departamento
+        : '';
     _emailCtrl.text = usuario.email;
     _passwordCtrl.clear();
     _rolSeleccionado = usuario.rol;
@@ -173,7 +189,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget   _formEmpleado(void Function(void Function()) dialogSetState) {
+  Widget _formEmpleado(void Function(void Function()) dialogSetState) {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
@@ -234,18 +250,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               controller: _emailCtrl,
               decoration: const InputDecoration(labelText: 'Correo'),
               keyboardType: TextInputType.emailAddress,
-              validator: (value) => value == null || value.isEmpty ? 'Ingrese correo' : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Ingrese correo' : null,
             ),
             TextFormField(
               controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: 'Contraseña temporal'),
+              decoration: const InputDecoration(
+                labelText: 'Contraseña temporal',
+              ),
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
               validator: (value) => _isEditing
                   ? null
                   : (value == null || value.isEmpty
-                      ? 'Ingrese una contraseña'
-                      : null),
+                        ? 'Ingrese una contraseña'
+                        : null),
             ),
           ],
         ),
@@ -310,9 +329,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       Navigator.pop(context);
       _cargarEmpleados();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar empleado: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
     }
   }
 
@@ -415,7 +434,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _usuarioEsActivo(Usuario u) {
     try {
       final dyn = u as dynamic;
-      final val = dyn.activo ?? dyn.estado ?? dyn.isActive ?? dyn.estado_usuario ?? dyn.estadoUsuario;
+      final val =
+          dyn.activo ??
+          dyn.estado ??
+          dyn.isActive ??
+          dyn.estado_usuario ??
+          dyn.estadoUsuario;
       if (val == null) return false;
       if (val is bool) return val;
       if (val is num) return val == 1;
@@ -438,16 +462,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     BoxDecoration containerDecoration = BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: const [
-        BoxShadow(
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
-      ],
+      boxShadow: const [BoxShadow(blurRadius: 6, offset: Offset(0, 2))],
     );
 
     EdgeInsets containerPadding = const EdgeInsets.all(12);
-    EdgeInsets containerMargin = const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
+    EdgeInsets containerMargin = const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 10,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -489,14 +511,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Row(
                           children: [
                             const Text('Mostrar solo inactivos'),
                             const SizedBox(width: 8),
                             Switch(
                               value: _showOnlyInactivos,
-                              onChanged: (v) => setState(() => _showOnlyInactivos = v),
+                              onChanged: (v) =>
+                                  setState(() => _showOnlyInactivos = v),
                             ),
                             const Spacer(),
                             ElevatedButton.icon(
@@ -523,7 +549,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             loading: loadingUsuarios,
                             onEditar: (emp) => _abrirModalEditar(emp),
                             onEliminar: (id) => _eliminarEmpleado(id),
-                            onEliminarPermanente: (id) => _eliminarPermanenteEmpleado(id),
+                            onEliminarPermanente: (id) =>
+                                _eliminarPermanenteEmpleado(id),
                             onActivar: (id) => _activarEmpleado(id),
                             onAgregar: _abrirModalAgregar,
                           ),

@@ -500,9 +500,9 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
           },
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
+      bottomNavigationBar: const BottomAppBar(
         color: Colors.teal,
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.all(8),
           child: Text(
             '© 2024 ChronoGuard. Todos los derechos reservados.',
@@ -510,56 +510,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _mostrarSeleccionEmpleadoParaReporte() {
-    if (empleados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay empleados registrados')),
-      );
-      return;
-    }
-    int selectedId = empleados.first.id;
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Seleccionar empleado para reporte'),
-          content: StatefulBuilder(
-            builder: (context, setLocalState) {
-              return DropdownButton<int>(
-                value: selectedId,
-                isExpanded: true,
-                items: empleados
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e.id,
-                        child: Text('${e.nombre} (${e.rol})'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) setLocalState(() => selectedId = v);
-                },
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                mostrarDialogoReporteParaEmpleado(selectedId);
-              },
-              child: const Text('Continuar'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
