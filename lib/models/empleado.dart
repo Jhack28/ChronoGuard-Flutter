@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 class Empleado {
   final int id;
   final String nombre;
@@ -23,7 +25,12 @@ class Empleado {
     final nombreVal = json['nombre'] ?? json['Nombre'] ?? '';
     final emailVal = json['email'] ?? json['Email'] ?? '';
     final rolVal = json['rol'] ?? json['Rol'] ?? '';
-    final departamentoVal = json['id_departamento'] ?? json['ID_Departamento']  ?? json['departamento'] ?? json['Departamento'] ?? '';
+    final departamentoVal =
+        json['id_departamento'] ??
+        json['ID_Departamento'] ??
+        json['departamento'] ??
+        json['Departamento'] ??
+        '';
     final documentoVal =
         json['documento'] ??
         json['Numero_de_Documento'] ??

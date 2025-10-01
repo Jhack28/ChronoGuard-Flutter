@@ -21,7 +21,6 @@ CREATE TABLE Usuarios (
   Nombre VARCHAR(50) NOT NULL,
   Email VARCHAR(100) UNIQUE NOT NULL,
   Password VARCHAR(255) NOT NULL,
-<<<<<<< HEAD
   Estado ENUM('Activo','Inactivo') NOT NULL,
   ID_Rol INT NOT NULL,
   id_departamento INT DEFAULT NULL,
@@ -29,36 +28,19 @@ CREATE TABLE Usuarios (
   FOREIGN KEY (id_departamento) REFERENCES Departamento(id_departamento) ON DELETE SET NULL
 );
 
-=======
-  ID_Rol INT NOT NULL,
-  id_departamento INT DEFAULT NULL,
-  FOREIGN KEY (ID_Rol) REFERENCES Roles(ID_Rol) ON DELETE CASCADE,
-  FOREIGN KEY (id_departamento) REFERENCES Departamento(id_departamento) ON DELETE SET NULL,
-  Estado ENUM('Activo','Inactivo') NOT NULL
-);
-
-
-
->>>>>>> 4a30d4dad3a5a32324a4197668c81e98316e1442
 -- Tabla EstadoPermisos
 CREATE TABLE EstadoPermisos (
   ID_EstadoPermiso INT AUTO_INCREMENT PRIMARY KEY,
   Estado ENUM('Pendiente', 'Aprobado', 'Rechazado') NOT NULL
 );
-<<<<<<< HEAD
 
 INSERT INTO EstadoPermisos (Estado) VALUES ('Pendiente'), ('Aprobado'), ('Rechazado');
-=======
-INSERT INTO EstadoPermisos (Estado) VALUES ('Pendiente');
-INSERT INTO EstadoPermisos (Estado) VALUES ('Aprobado');
-INSERT INTO EstadoPermisos (Estado) VALUES ('Rechazado');
->>>>>>> 4a30d4dad3a5a32324a4197668c81e98316e1442
 
 -- Tabla TipoPermiso (solicitudes de permisos)
 CREATE TABLE TipoPermiso (
   ID_tipoPermiso INT PRIMARY KEY AUTO_INCREMENT,
   ID_Usuario INT NOT NULL,
-  id_departamento INT NOT NULL,
+  id_departamento INT NULL,
   tipo ENUM(
     'calamidad domestica',
     'Cita Medica',
@@ -72,32 +54,12 @@ CREATE TABLE TipoPermiso (
   FOREIGN KEY (id_departamento) REFERENCES Departamento(id_departamento) ON DELETE CASCADE
 );
 
-<<<<<<< HEAD
-=======
--- Tabla Notificaciones Para el ADMIN y la SECRETARIA
-CREATE TABLE Notificaciones_ADMIN (
-  ID_notificacion INT PRIMARY KEY AUTO_INCREMENT,
-  Fecha_Solicitud DATE NOT NULL,
-  ID_Usuario INT NOT NULL,
-  ID_tipoPermiso INT NOT NULL,
-  tipo ENUM(
-    'calamidad domestica', 'Cita Medica','Permiso Personal', 'Permiso por citacion legal o judicial', 'eventos familiares') NOT NULL,
-  Email VARCHAR(100) NOT NULL,
-  Email VARCHAR(100) NOT NULL,
-  FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE,
-  FOREIGN KEY (ID_tipoPermiso) REFERENCES TipoPermiso(ID_tipoPermiso) ON DELETE CASCADE
-);
-
->>>>>>> 4a30d4dad3a5a32324a4197668c81e98316e1442
 -- Tabla Notificaciones (para los empleados)
 CREATE TABLE Notificaciones (
   ID_notificacion INT PRIMARY KEY AUTO_INCREMENT,
   ID_Usuario INT NOT NULL,
   ID_EstadoPermiso INT NOT NULL,
-<<<<<<< HEAD
   ID_tipoPermiso INT DEFAULT NULL,
-=======
->>>>>>> 4a30d4dad3a5a32324a4197668c81e98316e1442
   Mensaje TEXT NOT NULL,
   FechaEnvio DATE NOT NULL,
   Estado ENUM('Pendiente', 'Aprobado', 'Rechazado') NOT NULL,
@@ -117,7 +79,6 @@ CREATE TABLE Horarios (
   FOREIGN KEY (Asignado_Por) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
 );
 
-<<<<<<< HEAD
 -- Inserción de Roles
 INSERT INTO Roles (tipo) VALUES ('Admin'), ('Secretaria'), ('Empleado');
 
@@ -169,8 +130,6 @@ INSERT INTO Horarios (ID_Usuario, Dia, Hora_Entrada, Hora_Salida, Fecha_Asignaci
 (8, 'Jueves', '08:00:00', '17:00:00', '2025-09-04', 4),
 (9, 'Viernes', '08:00:00', '17:00:00', '2025-09-05', 3),
 (10, 'Sabado', '08:00:00', '13:00:00', '2025-09-06', 4);
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('angie', 'eangie@correo.com', MD5('secre321'), 2, 2544434, 'inactivo');
 
 
 -- Nuevos Usuarios
@@ -230,38 +189,4 @@ select*from notificaciones;
 select*from horarios;
 select*from estadopermisos;
 select*from tipopermiso;
-
-
-=======
-
-
-INSERT INTO Roles (tipo) VALUES ('Admin'), ('Secretaria'), ('Empleado');
-
-INSERT INTO departamento (tipo) VALUES ('Lavado'), ('Planchado'), ('Secado'), ('Transporte');
-
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('jairo', 'admin@correo.com', MD5('admin123'),1, 12345, 'Activo');
--- Secretaria
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('Laura', 'secre@correo.com', MD5('secretaria123'), 2, 51342, 'Activo' );
-
--- Empleado
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
-VALUES ('mario', 'empleado@correo.com', MD5('empleado123'), 3, 4, 2534, 'Activo');
-
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
-VALUES ('camilo', 'cami@correo.com', MD5('empleado123'), 3, 2, 232534, 'Activo');
-
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('juan esteban londoño carcajal', 'juanes@correo.com', MD5('admin123'), 1, 222534, 'Activo');
-
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, Estado)
-VALUES ('angie', 'eangie@correo.com', MD5('secre321'), 2, 2544434, 'inactivo');
-
-INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
-VALUES ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Activo');
-
-select*from usuarios;
-select*from horarios;
->>>>>>> 4a30d4dad3a5a32324a4197668c81e98316e1442
 

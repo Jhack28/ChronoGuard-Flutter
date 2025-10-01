@@ -162,7 +162,7 @@ app.post('/login', (req, res) => {
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
   
   db.query(
-  'SELECT ID_Usuario, ID_Rol, ID_Departamento FROM Usuarios WHERE Email = ? AND Password = ?',
+  'SELECT ID_Usuario, ID_Rol, id_departamento, Estado FROM Usuarios WHERE Email = ? AND Password = ? AND Estado = "Activo"',
   [email, passwordMd5],
   (err, results) => {
     if (err) {
@@ -176,7 +176,8 @@ app.post('/login', (req, res) => {
         success: true,
         ID_Usuario: results[0].ID_Usuario,
         ID_Rol: results[0].ID_Rol,
-        id_departamento: results[0].ID_Departamento, // <-- aquí estaba faltando
+        id_departamento: results[0].id_departamento,// <-- aquí estaba faltando
+        Estado: results[0].Estado, 
       });
     } else {
       return res.json({ success: false, message: 'Credenciales inválidas' });
@@ -933,9 +934,8 @@ app.get('/empleado/:id/estadisticas', (req, res) => {
   const { id } = req.params;
   const sql = `
     SELECT
-      (SELECT COUNT(*) FROM Asistencias WHERE ID_Usuario = ?) AS asistencias,
+      (SELECT COUNT(*) FROM Horarios WHERE ID_Usuario = ?) AS asistencias,
       (SELECT COUNT(*) FROM Notificaciones WHERE ID_Usuario = ?) AS permisos,
-      (SELECT COUNT(*) FROM Asistencias WHERE ID_Usuario = ? AND Estado = 'Retraso') AS retrasos
   `;
   db.query(sql, [id, id, id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });

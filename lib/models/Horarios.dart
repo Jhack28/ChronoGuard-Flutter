@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 class Horario {
   final int? idHorario;
   final int idUsuario;

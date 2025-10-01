@@ -1,3 +1,4 @@
+// ignore_for_file: library_private_types_in_public_api, prefer_const_constructors, prefer_const_literals_to_create_immutables
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,7 +24,10 @@ class _HomeState extends State<Home> {
         // Fondo gradiente parecido a header en CSS
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
+            colors: [
+              const Color.fromARGB(255, 0, 116, 90),
+              Colors.lightBlueAccent,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -195,6 +199,7 @@ class _HomeState extends State<Home> {
     );
   }
 }
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -219,11 +224,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['success'] == true) {
-        return data; // Retorna todo el objeto para usar ID_Usuario y ID_Rol
+      try {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        return null;
+      } catch (e) {
+        print('Error parsing login response: $e');
+        return null;
       }
     }
+
     return null;
   }
 
@@ -236,40 +246,56 @@ class _LoginScreenState extends State<LoginScreen> {
       ).showSnackBar(SnackBar(content: Text('Intentando iniciar sesión...')));
 
       final data = await loginUser(correo, contrasena);
-      
 
-      if (data != null) {
-        final idRol = data['ID_Rol'].toString();
-        final idUsuario = data['ID_Usuario'];
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error en la comunicación con el servidor'),
+          ),
+        );
+        return;
+      }
 
-        if (idRol == '1') {
-          Navigator.pushReplacementNamed(context, '/adminHome');
-        } else if (idRol == '2') { // Secretaria
+      final success = data['success'] == true;
+      // Si el backend indica estado del usuario
+      final estado = data['Estado'] ?? data['estado'];
+
+      if (!success) {
+        // Mensajes informativos desde el backend (por ejemplo: 'Usuario inactivo')
+        final msg =
+            data['message'] ??
+            (estado != null
+                ? 'Usuario: $estado'
+                : 'Correo o contraseña incorrectos');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+        return;
+      }
+
+      final idRol =
+          (data['ID_Rol'] ?? data['id_rol'] ?? data['rol'])?.toString() ?? '';
+      final idUsuario =
+          data['ID_Usuario'] ?? data['id'] ?? data['ID'] ?? data['usuarioId'];
+
+      if (idRol == '1') {
+        Navigator.pushReplacementNamed(context, '/adminHome');
+      } else if (idRol == '2') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => SecretariaHomeScreen(idSecretaria: idUsuario),
           ),
         );
-
-        } else if (idRol == '3') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EmpleadoHomeScreen(idUsuario: idUsuario),
-            ),
-          );
-        } else {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      } else if (data != null && data['message'] != null) {
-        ScaffoldMessenger.of(
+      } else if (idRol == '3') {
+        Navigator.pushReplacement(
           context,
-        ).showSnackBar(SnackBar(content: Text(data['message'])));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Correo o contraseña incorrectos')),
+          MaterialPageRoute(
+            builder: (context) => EmpleadoHomeScreen(idUsuario: idUsuario),
+          ),
         );
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
       }
     }
   }
@@ -285,7 +311,10 @@ class _LoginScreenState extends State<LoginScreen> {
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color.fromARGB(255, 0, 116, 90), Colors.lightBlueAccent],
+            colors: [
+              const Color.fromARGB(255, 0, 116, 90),
+              Colors.lightBlueAccent,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

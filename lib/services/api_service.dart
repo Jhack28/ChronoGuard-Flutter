@@ -3,6 +3,7 @@ import '../models/empleado.dart';
 import '../models/Horarios.dart';
 import '../models/usuario.dart';
 import '../models/estado_permisos.dart';
+// ignore_for_file: avoid_print
 import 'dart:convert';
 
 class ApiService {
@@ -118,7 +119,10 @@ class ApiService {
   }
 
   /// Actualizar estado del permiso
-  static Future<void> actualizarEstadoPermiso(int idPermiso, String nuevoEstado) async {
+  static Future<void> actualizarEstadoPermiso(
+    int idPermiso,
+    String nuevoEstado,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/permisos/$idPermiso/estado'),
       headers: {'Content-Type': 'application/json'},
@@ -161,7 +165,6 @@ class ApiService {
                 );
 
           // Logging para depurar desde la app
-          // ignore: avoid_print
           print(
             '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
           );
@@ -188,7 +191,6 @@ class ApiService {
           );
         } catch (e) {
           // continúa con la siguiente ruta/método
-          // ignore: avoid_print
           print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
         }
       }
@@ -230,7 +232,6 @@ class ApiService {
                   body: jsonEncode({'id': id}),
                 );
 
-          // ignore: avoid_print
           print(
             '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
           );
@@ -252,7 +253,6 @@ class ApiService {
             'Error al inactivar empleado: ${resp.statusCode} ${resp.body}',
           );
         } catch (e) {
-          // ignore: avoid_print
           print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
         }
       }
@@ -282,7 +282,6 @@ class ApiService {
           headers: {'Content-Type': 'application/json'},
         );
 
-        // ignore: avoid_print
         print('DELETE $url -> ${resp.statusCode}\n${resp.body}');
 
         if (resp.statusCode == 200 ||
@@ -304,7 +303,6 @@ class ApiService {
           'Error al eliminar empleado: ${resp.statusCode} ${resp.body}',
         );
       } catch (e) {
-        // ignore: avoid_print
         print('Intento fallido $path (DELETE): $e');
       }
     }
@@ -345,57 +343,68 @@ class ApiService {
     throw Exception('Error al cargar notificaciones');
   }
 
-
   static Future<bool> checkConnection() async {
-  try {
-    final response = await http.head(Uri.parse(baseUrl));
-    return response.statusCode == 200;
-  } catch (e) {
-    return false;
+    try {
+      final response = await http.head(Uri.parse(baseUrl));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
-}
 
   // Crear permiso
-static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
-  final res = await http.post(
-    Uri.parse('$baseUrl/permisos'),
-    body: jsonEncode(permisoData),
-    headers: {'Content-Type': 'application/json'},
-  );
-  
-  if (res.statusCode == 200 || res.statusCode == 201) {
-    return jsonDecode(res.body)['idPermiso']; // 👈 backend responde esto
+  static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/permisos'),
+      body: jsonEncode(permisoData),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      // El backend puede devolver distintos nombres para el id (idPermiso, insertId, id, ID, etc.).
+      final body = res.body;
+      try {
+        final decoded = body.isNotEmpty ? jsonDecode(body) : null;
+        if (decoded is Map<String, dynamic>) {
+          final possibleKeys = [
+            'idPermiso',
+            'id_permiso',
+            'idPermisoInsert',
+            'insertId',
+            'insert_id',
+            'ID',
+            'id',
+          ];
+
+          for (final k in possibleKeys) {
+            if (decoded.containsKey(k)) {
+              final val = decoded[k];
+              if (val is int) return val;
+              if (val is String) {
+                final parsed = int.tryParse(val);
+                if (parsed != null) return parsed;
+              }
+            }
+          }
+        }
+
+        // Si la respuesta es simplemente un número (p.ej. "123")
+        if (decoded is int) return decoded;
+        if (decoded is String) {
+          final parsed = int.tryParse(decoded);
+          if (parsed != null) return parsed;
+        }
+
+        throw Exception('No se encontró campo de id en la respuesta: $body');
+      } catch (e) {
+        throw Exception(
+          'Error al parsear respuesta de crearPermiso: $e | body=${res.body}',
+        );
+      }
+    }
+
+    throw Exception('Error al crear permiso: ${res.statusCode} ${res.body}');
   }
-  throw Exception('Error al crear permiso: ${res.body}');
-}
-
-
-  Future<int> solicitarPermiso({
-  required int idUsuario,
-  required int id_departamento,
-  required String tipo,
-  required String mensaje,
-  required DateTime fechaInicio,
-  required DateTime fechaFin,
-}) async {
-  final permiso = {
-    "ID_Usuario": idUsuario,
-    "id_departamento": id_departamento,
-    "tipo": tipo,
-    "mensaje": mensaje,
-    "Fecha_inicio": fechaInicio.toIso8601String().split('T')[0],
-    "Fecha_fin": fechaFin.toIso8601String().split('T')[0],
-  };
-
-  print("📤 Enviando permiso: $permiso"); // Debug para verificar
-  print("➡️ ID Usuario: $idUsuario");
-  print("➡️ ID Departamento: $id_departamento"); // 👈 DEBUG
-
-  return await ApiService.crearPermiso(permiso);
-  
-}
-
-
 
   // Crear notificación para empleado
   static Future<void> crearNotificacionEmpleado(
@@ -449,7 +458,6 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
                   body: jsonEncode({'id': id}),
                 );
 
-          // ignore: avoid_print
           print(
             '${tryPatch ? 'PATCH' : 'PUT'} $url -> ${resp.statusCode}\n${resp.body}',
           );
@@ -473,7 +481,6 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
             'Error al activar empleado: ${resp.statusCode} ${resp.body}',
           );
         } catch (e) {
-          // ignore: avoid_print
           print('Intento fallido $path ${tryPatch ? '(PATCH)' : '(PUT)'}: $e');
         }
       }
@@ -485,7 +492,9 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
   }
 
   static Future<Map<String, dynamic>> fetchEmpleadoStats(int idUsuario) async {
-    final response = await http.get(Uri.parse('$baseUrl/empleado/stats/$idUsuario'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/empleado/stats/$idUsuario'),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
@@ -493,25 +502,14 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
     }
   }
 
-    static Future<List<Permiso>> fetchPermiso() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/permisos/lista'));
-      if (response.statusCode == 200) {
-        final body = response.body.isNotEmpty ? response.body : '[]';
-        final List<dynamic> data = jsonDecode(body);
-        return data.map((json) => Permiso.fromJson(json)).toList();
-      } else {
-        print('Error al cargar permisos: código ${response.statusCode}');
-        return [];
-      }
-    } catch (e) {
-      print('Error en fetchPermisos: $e');
-      return [];
-    }
-  }
+  // Alias por compatibilidad: la implementación principal es `fetchPermisos`
+  static Future<List<Permiso>> fetchPermiso() => fetchPermisos();
 
   // Actualizar estado del permiso especificado
-  static Future<void> actualizarEstadoPermisos(int idTipoPermiso, String nuevoEstado) async {
+  static Future<void> actualizarEstadoPermisos(
+    int idTipoPermiso,
+    String nuevoEstado,
+  ) async {
     final url = Uri.parse('$baseUrl/permisos/estado/$idTipoPermiso');
     try {
       final response = await http.put(
@@ -520,7 +518,9 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
         body: jsonEncode({'estado': nuevoEstado}), // jsonEncode no json.encode
       );
       if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception('Error al actualizar estado: código ${response.statusCode}');
+        throw Exception(
+          'Error al actualizar estado: código ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('Error en actualizarEstadoPermiso: $e');
@@ -528,7 +528,3 @@ static Future<int> crearPermiso(Map<String, dynamic> permisoData) async {
     }
   }
 }
-
-
-
-
