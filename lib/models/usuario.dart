@@ -24,8 +24,9 @@ class Usuario {
   factory Usuario.fromJson(Map<String, dynamic> json) {
     final rawActivo = json['activo'];
     bool activoVal = false;
-    if (rawActivo is bool) activoVal = rawActivo;
-    else if (rawActivo is num) activoVal = rawActivo == 1;
+    if (rawActivo is bool) {
+      activoVal = rawActivo;
+    } else if (rawActivo is num) activoVal = rawActivo == 1;
     else if (rawActivo is String) activoVal = rawActivo == '1' || rawActivo.toLowerCase() == 'true' || rawActivo.toLowerCase() == 'activo';
 
     return Usuario(

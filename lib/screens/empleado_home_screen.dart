@@ -528,8 +528,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
         'secado': 3,
         'transporte': 4,
       };
-      if (deptMap.containsKey(rawDept))
+      if (deptMap.containsKey(rawDept)) {
         initialIdDepartamento = deptMap[rawDept];
+      }
     }
 
     List<Map<String, dynamic>> departamentosCache = [];
@@ -609,7 +610,7 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                                   ),
                                 )
                                 .toList(),
-                            value: selectedDepartamentoId,
+                            initialValue: selectedDepartamentoId,
                             onChanged: (v) {
                               setState(() {
                                 selectedDepartamentoId = v;
@@ -646,8 +647,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null)
+                              if (picked != null) {
                                 setState(() => fechaInicio = picked);
+                              }
                             },
                             child: Text(
                               fechaInicio == null
@@ -670,8 +672,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null)
+                              if (picked != null) {
                                 setState(() => fechaFin = picked);
+                              }
                             },
                             child: Text(
                               fechaFin == null
@@ -727,8 +730,9 @@ class _EmpleadoHomeScreenState extends State<EmpleadoHomeScreen> {
                     'secado': 3,
                     'transporte': 4,
                   };
-                  if (deptMap.containsKey(rawDept))
+                  if (deptMap.containsKey(rawDept)) {
                     idDepartamento = deptMap[rawDept];
+                  }
                 }
 
                 // si aún no hay departamento, avisar al usuario y no enviar

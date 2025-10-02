@@ -37,39 +37,55 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     Color iconColor = Colors.teal,
     VoidCallback? onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
+    // Make the card height responsive but smaller so the grid looks compact
+    final double cardHeight =
+        MediaQuery.of(context).size.height * 0.12; // ~7% of screen height
+
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        height: cardHeight.clamp(90.0, 160.0),
         child: Card(
           color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: iconColor, size: 38),
-                const SizedBox(height: 10),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: iconColor.withOpacity(0.12),
+                    child: Icon(icon, color: iconColor, size: 43),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -99,10 +115,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error al cargar datos: ${snapshot.error}'));
+              return Center(
+                child: Text('Error al cargar datos: ${snapshot.error}'),
+              );
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('No hay usuarios para mostrar estadísticas.'));
+              return const Center(
+                child: Text('No hay usuarios para mostrar estadísticas.'),
+              );
             }
 
             final usuarios = snapshot.data!;
@@ -112,27 +132,40 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             final activos = usuarios.where((u) => u.activo).length;
             final inactivos = totalUsuarios - activos;
             final admins = usuarios.where((u) => u.rol == 'Admin').length;
-            final secretarias = usuarios.where((u) => u.rol == 'Secretaria').length;
+            final secretarias = usuarios
+                .where((u) => u.rol == 'Secretaria')
+                .length;
             final empleados = usuarios.where((u) => u.rol == 'Empleado').length;
 
             // Ejemplo de filtros:
-            final activosList = usuarios.where((u) => u.estado == 'Activo').toList();
-            final inactivosList = usuarios.where((u) => u.estado == 'Inactivo').toList();
-            final empleadosList = usuarios.where((u) => u.rol == 'Empleado').toList();
+            final activosList = usuarios
+                .where((u) => u.estado == 'Activo')
+                .toList();
+            final inactivosList = usuarios
+                .where((u) => u.estado == 'Inactivo')
+                .toList();
+            final empleadosList = usuarios
+                .where((u) => u.rol == 'Empleado')
+                .toList();
 
             return RefreshIndicator(
-              onRefresh: () async => setState(() => _usuariosFuture = ApiService.fetchUsuarios()),
+              onRefresh: () async =>
+                  setState(() => _usuariosFuture = ApiService.fetchUsuarios()),
               child: GridView.count(
-                padding: const EdgeInsets.all(16),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 10,
+                ),
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
                 children: [
                   _buildStatCard(
                     title: 'Total Usuarios',
                     value: totalUsuarios.toString(),
                     icon: Icons.people,
-                    onTap: () => _navigateToUserList('Total Usuarios', usuarios),
+                    onTap: () =>
+                        _navigateToUserList('Total Usuarios', usuarios),
                   ),
                   _buildStatCard(
                     title: 'Activos',
@@ -144,27 +177,33 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                     title: 'Inactivos',
                     value: inactivos.toString(),
                     icon: Icons.cancel,
-                    onTap: () => _navigateToUserList('Inactivos', inactivosList),
+                    onTap: () =>
+                        _navigateToUserList('Inactivos', inactivosList),
                   ),
                   _buildStatCard(
                     title: 'Administradores',
                     value: admins.toString(),
                     icon: Icons.admin_panel_settings,
-                    onTap: () => _navigateToUserList('Administradores',
-                        usuarios.where((u) => u.rol == 'Admin').toList()),
+                    onTap: () => _navigateToUserList(
+                      'Administradores',
+                      usuarios.where((u) => u.rol == 'Admin').toList(),
+                    ),
                   ),
                   _buildStatCard(
                     title: 'Secretarias',
                     value: secretarias.toString(),
                     icon: Icons.support_agent,
-                    onTap: () => _navigateToUserList('Secretarias',
-                        usuarios.where((u) => u.rol == 'Secretaria').toList()),
+                    onTap: () => _navigateToUserList(
+                      'Secretarias',
+                      usuarios.where((u) => u.rol == 'Secretaria').toList(),
+                    ),
                   ),
                   _buildStatCard(
                     title: 'Empleados',
                     value: empleados.toString(),
                     icon: Icons.engineering,
-                    onTap: () => _navigateToUserList('Empleados', empleadosList),
+                    onTap: () =>
+                        _navigateToUserList('Empleados', empleadosList),
                   ),
                 ],
               ),

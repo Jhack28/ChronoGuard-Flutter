@@ -451,10 +451,11 @@ class ApiService {
             body['result'] is Map) {
           final r = body['result'];
           final candidate = r['insertId'] ?? r['id'] ?? r['ID'];
-          if (candidate != null)
+          if (candidate != null) {
             return candidate is int
                 ? candidate
                 : int.parse(candidate.toString());
+          }
         }
 
         // fallback: devolver 0 pero avisar

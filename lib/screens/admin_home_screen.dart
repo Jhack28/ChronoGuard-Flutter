@@ -588,9 +588,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           },
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
+      bottomNavigationBar: const BottomAppBar(
         color: Colors.teal,
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.all(8),
           child: Text(
             '© 2024 ChronoGuard. Todos los derechos reservados.',

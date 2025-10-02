@@ -26,10 +26,10 @@ class AdminHorariosTable extends StatelessWidget {
       child: Column(
         children: [
           // Título
-          Padding(
-            padding: const EdgeInsets.all(8),
+          const Padding(
+            padding: EdgeInsets.all(8),
             child: Row(
-              children: const [
+              children: [
                 Text(
                   'Horarios Asignados',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),

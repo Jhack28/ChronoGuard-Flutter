@@ -11,7 +11,7 @@ class AdminTable extends StatelessWidget {
   final VoidCallback onAgregar;
 
   // Constructor cambiado: quitar 'const' para permitir hot-reload sin errores
-  AdminTable({
+  const AdminTable({
     Key? key,
     required this.usuarios,
     required this.loading,
@@ -35,10 +35,12 @@ class AdminTable extends StatelessWidget {
       if (val is num) return val == 1 ? 'Activo' : 'Inactivo';
       if (val is String) {
         final lower = val.toLowerCase();
-        if (lower == 'true' || lower == '1' || lower == 'activo')
+        if (lower == 'true' || lower == '1' || lower == 'activo') {
           return 'Activo';
-        if (lower == 'false' || lower == '0' || lower == 'inactivo')
+        }
+        if (lower == 'false' || lower == '0' || lower == 'inactivo') {
           return 'Inactivo';
+        }
         return val;
       }
       return val.toString();

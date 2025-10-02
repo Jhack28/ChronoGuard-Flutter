@@ -29,7 +29,7 @@ class SecrePermisosTable extends StatelessWidget {
       builder: (context, constraints) {
         // Estimación de ancho mínimo necesario para mostrar cómodamente columnas.
         // Ajusta este valor si agregas/quitas columnas.
-        final double minTableWidth = 900;
+        const double minTableWidth = 900;
         return Scrollbar(
           thumbVisibility: true,
           child: SingleChildScrollView(
