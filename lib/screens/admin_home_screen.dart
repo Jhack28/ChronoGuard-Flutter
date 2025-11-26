@@ -1,0 +1,604 @@
+import 'package:flutter/material.dart';
+import '../models/Horarios.dart';
+import '../models/usuario.dart';
+import '../services/api_service.dart';
+import '../widgets/admin_table.dart';
+import '../widgets/admin_horarios_table.dart';
+import '../models/estado_permisos.dart';
+import '../widgets/admin_permisos_table.dart';
+
+class AdminHomeScreen extends StatefulWidget {
+  const AdminHomeScreen({super.key});
+
+  @override
+  _AdminHomeScreenState createState() => _AdminHomeScreenState();
+}
+
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  List<Usuario> usuarios = [];
+  bool loadingUsuarios = true;
+  List<Horario> horarios = [];
+  bool _showOnlyInactivos = false;
+  bool loadingHorarios = true;
+  List<Permiso> permisos = [];
+  bool loadingPermisos = true;
+
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _numeroDocumentoCtrl = TextEditingController();
+  final TextEditingController _nombreCtrl = TextEditingController();
+  final TextEditingController _departamentoCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passwordCtrl = TextEditingController();
+  String? _rolSeleccionado;
+
+  bool _isEditing = false;
+  int? _editingUsuarioId;
+
+  final List<String> roles = ['Administrador', 'Secretaria', 'Empleado'];
+  final List<String> departamentos = [
+    'Lavado',
+    'Planchado',
+    'Secado',
+    'Transporte',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarEmpleados();
+    _cargarHorarios();
+    _cargarPermisos();
+  }
+
+  Future<void> _cargarEmpleados() async {
+    setState(() {
+      loadingUsuarios = true;
+    });
+    try {
+      final list = await ApiService.fetchUsuarios();
+      setState(() {
+        usuarios = list;
+        loadingUsuarios = false;
+      });
+    } catch (e) {
+      setState(() {
+        loadingUsuarios = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al cargar empleados: $e")));
+    }
+  }
+
+  Future<void> _cargarHorarios() async {
+    setState(() => loadingHorarios = true);
+    try {
+      final lista = await ApiService.obtenerHorarios();
+      setState(() {
+        horarios = lista;
+        loadingHorarios = false;
+      });
+    } catch (e) {
+      setState(() => loadingHorarios = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar horarios: $e')));
+    }
+  }
+
+  Future<void> _cargarPermisos() async {
+    setState(() {
+      loadingPermisos = true;
+    });
+    try {
+      final lista = await ApiService.fetchPermisos();
+      // Ordenar localmente: primero Pendiente, luego Aprobado, luego Rechazado
+      lista.sort((a, b) {
+        final sa = a.estadoPermiso.toLowerCase();
+        final sb = b.estadoPermiso.toLowerCase();
+        int rank(String s) {
+          if (s.contains('pend')) return 0;
+          if (s.contains('aprob')) return 1;
+          if (s.contains('rech')) return 2;
+          return 3;
+        }
+
+        return rank(sa).compareTo(rank(sb));
+      });
+
+      setState(() {
+        permisos = lista;
+        loadingPermisos = false;
+      });
+    } catch (e) {
+      setState(() {
+        loadingPermisos = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar permisos: $e')));
+    }
+  }
+
+  void _abrirModalAgregar() {
+    _formKey.currentState?.reset();
+    _numeroDocumentoCtrl.clear();
+    _nombreCtrl.clear();
+    _departamentoCtrl.clear();
+    _emailCtrl.clear();
+    _passwordCtrl.clear();
+    _rolSeleccionado = null;
+    _isEditing = false;
+    _editingUsuarioId = null;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) => AlertDialog(
+            title: const Text('Agregar Empleado'),
+            content: _formEmpleado(dialogSetState),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: _guardarEmpleado,
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _abrirModalEditar(Usuario usuario) {
+    _numeroDocumentoCtrl.text = usuario.documento;
+    _nombreCtrl.text = usuario.nombre;
+    _departamentoCtrl.text = usuario.rol == "Empleado"
+        ? usuario.departamento
+        : '';
+    _emailCtrl.text = usuario.email;
+    _passwordCtrl.clear();
+    _rolSeleccionado = usuario.rol;
+    _isEditing = true;
+    _editingUsuarioId = usuario.id;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) => AlertDialog(
+            title: const Text('Agregar Empleado'),
+            content: _formEmpleado(dialogSetState),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: _guardarEmpleado,
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _formEmpleado(void Function(void Function()) dialogSetState) {
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _numeroDocumentoCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Número de Documento',
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Ingrese número de documento'
+                  : null,
+            ),
+            TextFormField(
+              controller: _nombreCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre'),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Ingrese nombre' : null,
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: _rolSeleccionado,
+              decoration: const InputDecoration(labelText: 'Rol'),
+              items: ['Administrador', 'Secretaria', 'Empleado']
+                  .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))
+                  .toList(),
+              onChanged: (val) {
+                dialogSetState(() {
+                  _rolSeleccionado = val;
+                  if (_rolSeleccionado != 'Empleado') {
+                    _departamentoCtrl.clear();
+                  }
+                });
+              },
+              validator: (value) => value == null ? 'Seleccione un rol' : null,
+            ),
+            if (_rolSeleccionado == 'Empleado')
+              DropdownButtonFormField<String>(
+                initialValue: _departamentoCtrl.text.isNotEmpty
+                    ? _departamentoCtrl.text
+                    : null,
+                decoration: const InputDecoration(labelText: 'Departamento'),
+                items: ['Lavado', 'Planchado', 'Secado', 'Transporte']
+                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                    .toList(),
+                onChanged: (val) {
+                  dialogSetState(() {
+                    _departamentoCtrl.text = val ?? '';
+                  });
+                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Seleccione un departamento'
+                    : null,
+              ),
+            TextFormField(
+              controller: _emailCtrl,
+              decoration: const InputDecoration(labelText: 'Correo'),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Ingrese correo' : null,
+            ),
+            TextFormField(
+              controller: _passwordCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Contraseña temporal',
+              ),
+              keyboardType: TextInputType.visiblePassword,
+              obscureText: true,
+              validator: (value) => _isEditing
+                  ? null
+                  : (value == null || value.isEmpty
+                        ? 'Ingrese una contraseña'
+                        : null),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int getRolId(String rol) {
+    switch (rol) {
+      case 'Administrador':
+        return 1;
+      case 'Secretaria':
+        return 2;
+      case 'Empleado':
+        return 3;
+      default:
+        return 3;
+    }
+  }
+
+  int? getDepartamentoId(String? departamento) {
+    switch (departamento) {
+      case 'Lavado':
+        return 1;
+      case 'Planchado':
+        return 2;
+      case 'Secado':
+        return 3;
+      case 'Transporte':
+        return 4;
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _guardarEmpleado() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final rolId = getRolId(_rolSeleccionado ?? 'Empleado');
+    final departamentoId = _rolSeleccionado == 'Empleado'
+        ? getDepartamentoId(_departamentoCtrl.text)
+        : null;
+
+    final empleadoData = {
+      'numero_de_documento': _numeroDocumentoCtrl.text,
+      'nombre': _nombreCtrl.text,
+      'email': _emailCtrl.text,
+      'password': _passwordCtrl.text,
+      'rol': rolId,
+    };
+
+    if (departamentoId != null) {
+      empleadoData['departamento'] = departamentoId;
+    }
+
+    try {
+      if (_isEditing && _editingUsuarioId != null) {
+        await ApiService.actualizarEmpleado(_editingUsuarioId!, empleadoData);
+      } else {
+        await ApiService.crearEmpleado(empleadoData);
+      }
+      Navigator.pop(context);
+      _cargarEmpleados();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar empleado: $e')));
+    }
+  }
+
+  Future<void> _eliminarEmpleado(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: const Text('¿Está seguro de inactivar este empleado?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Inactivar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      try {
+        await ApiService.inactivarEmpleado(id);
+        _cargarEmpleados();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al inactivar empleado: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _eliminarPermanenteEmpleado(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar definitivamente'),
+        content: const Text(
+          '¿Eliminar definitivamente este empleado? Esta acción NO se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      try {
+        await ApiService.eliminarEmpleado(id);
+        _cargarEmpleados();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar empleado: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _activarEmpleado(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Reactivar empleado'),
+        content: const Text('¿Desea reactivar este empleado?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reactivar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      try {
+        await ApiService.activarEmpleado(id);
+        _cargarEmpleados();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al reactivar empleado: $e')),
+        );
+      }
+    }
+  }
+
+  bool _usuarioEsActivo(Usuario u) {
+    try {
+      final dyn = u as dynamic;
+      final val =
+          dyn.activo ??
+          dyn.estado ??
+          dyn.isActive ??
+          dyn.estado_usuario ??
+          dyn.estadoUsuario;
+      if (val == null) return false;
+      if (val is bool) return val;
+      if (val is num) return val == 1;
+      if (val is String) {
+        final lower = val.toLowerCase();
+        return (lower == 'true' || lower == '1' || lower == 'activo');
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final usuariosFiltrados = _showOnlyInactivos
+        ? usuarios.where((u) => !_usuarioEsActivo(u)).toList()
+        : usuarios.where((u) => _usuarioEsActivo(u)).toList();
+
+    BoxDecoration containerDecoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [BoxShadow(blurRadius: 6, offset: Offset(0, 2))],
+    );
+
+    EdgeInsets containerPadding = const EdgeInsets.all(12);
+    EdgeInsets containerMargin = const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 10,
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Panel de Administrador'),
+        backgroundColor: const Color.fromARGB(255, 0, 207, 187),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              _cargarEmpleados();
+              _cargarHorarios();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.lightBlueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('Mostrar solo inactivos'),
+                            const SizedBox(width: 8),
+                            Switch(
+                              value: _showOnlyInactivos,
+                              onChanged: (v) =>
+                                  setState(() => _showOnlyInactivos = v),
+                            ),
+                            const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/adminStats');
+                              },
+                              icon: const Icon(Icons.bar_chart),
+                              label: const Text('Estadísticas'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: containerMargin,
+                        child: Container(
+                          decoration: containerDecoration,
+                          padding: containerPadding,
+                          child: AdminTable(
+                            usuarios: usuariosFiltrados,
+                            loading: loadingUsuarios,
+                            onEditar: (emp) => _abrirModalEditar(emp),
+                            onEliminar: (id) => _eliminarEmpleado(id),
+                            onEliminarPermanente: (id) =>
+                                _eliminarPermanenteEmpleado(id),
+                            onActivar: (id) => _activarEmpleado(id),
+                            onAgregar: _abrirModalAgregar,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: containerMargin,
+                        child: Container(
+                          decoration: containerDecoration,
+                          padding: containerPadding,
+                          child: AdminHorariosTable(
+                            horarios: horarios,
+                            loading: loadingHorarios,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: containerMargin,
+                        child: Container(
+                          decoration: containerDecoration,
+                          padding: containerPadding,
+                          child: loadingPermisos
+                              ? const Center(child: CircularProgressIndicator())
+                              : AdminPermisosTable(
+                                  permisos: permisos,
+                                  onRefrescar: _cargarPermisos,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: const BottomAppBar(
+        color: Colors.teal,
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
+            '© 2024 ChronoGuard. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  } // cierre build y clase
+}
