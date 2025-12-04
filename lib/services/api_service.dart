@@ -34,7 +34,7 @@ class ApiService {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://3.82.179.61:3000', // IP del servidor remoto
+    defaultValue: 'http://3.216.75.217:3000', // IP del servidor remoto
   );
 
   /// Obtener empleados desde la BD
