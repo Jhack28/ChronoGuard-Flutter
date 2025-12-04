@@ -27,7 +27,7 @@ const swaggerOptions = {
       description: 'Documentación automática de la API Chronoguard',
     },
     servers: [
-      { url: 'http://3.82.179.61:3000' }, // Ajusta según IP y puerto reales
+      { url: 'http://3.216.75.217:3000' }, // Ajusta según IP y puerto reales
     ],
   },
   apis: ['./server.js'], // Apunta al archivo actual para leer las anotaciones swagger
