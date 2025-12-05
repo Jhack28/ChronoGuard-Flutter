@@ -8,10 +8,10 @@ const crypto = require('crypto');
 const app = express();
 const path = require('path');
 
-app.use(express.static(path.join(__dirname, 'build/web')));
+app.use(express.static(path.join(__dirname, '../build/web')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build/web', 'index.html'));
+  res.sendFile(path.join(__dirname, '../build/web', 'index.html'));
 });
 
 // --- INICIO: Swagger ---
@@ -151,6 +151,38 @@ function normalizeTime(t) {
   return null;
 }
 
+// Endpoint de login
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Login de usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso o fallido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 ID_Rol:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ */
 // Endpoint de login
 /**
  * @swagger
