@@ -222,30 +222,39 @@ app.post('/login', (req, res) => {
   }
 
   const passwordMd5 = crypto.createHash('md5').update(password).digest('hex');
-  
-  db.query(
-  'SELECT ID_Usuario, ID_Rol, id_departamento, Estado FROM Usuarios WHERE Email = ? AND Password = ? AND Estado = "Activo"',
-  [email, passwordMd5],
-  (err, results) => {
-    if (err) {
-      console.error('Error en consulta SQL:', err);
-      return res.status(500).json({ success: false, error: err.message });
-    }
-    if (results.length > 0) {
-      console.log("📌 Resultado SQL login:", results[0]);
 
+  // Buscar usuario por email y password (sin filtrar por Estado)
+  db.query(
+    'SELECT ID_Usuario, ID_Rol, id_departamento, Estado FROM Usuarios WHERE Email = ? AND Password = ?',
+    [email, passwordMd5],
+    (err, results) => {
+      if (err) {
+        console.error('Error en consulta SQL:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+
+      // No existe usuario o contraseña incorrecta
+      if (results.length === 0) {
+        return res.json({ success: false, message: 'Correo o contraseña incorrectos' });
+      }
+
+      const user = results[0];
+
+      // Usuario existe pero está inactivo
+      if (user.Estado !== 'Activo') {
+        return res.json({ success: false, message: 'Cuenta Inactiva' });
+      }
+
+      // Usuario activo y credenciales correctas
       return res.json({
         success: true,
-        ID_Usuario: results[0].ID_Usuario,
-        ID_Rol: results[0].ID_Rol,
-        id_departamento: results[0].id_departamento,// <-- aquí estaba faltando
-        Estado: results[0].Estado, 
+        ID_Usuario: user.ID_Usuario,
+        ID_Rol: user.ID_Rol,
+        id_departamento: user.id_departamento,
+        Estado: user.Estado,
       });
-    } else {
-      return res.json({ success: false, message: 'Cuenta Inactiva' });
     }
-  }
-);
+  );
 });
 
 // LISTA usuarios (admin)
