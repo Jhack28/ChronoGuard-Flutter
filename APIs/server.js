@@ -1167,18 +1167,27 @@ app.get('/admin/estadisticas/:idUsuario', (req, res) => {
  *         description: Error interno
  */
 app.get('/empleado/:id/estadisticas', (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'ID de empleado inválido' });
+  }
+
   const sql = `
     SELECT
       (SELECT COUNT(*) FROM Horarios WHERE ID_Usuario = ?) AS asistencias,
       (SELECT COUNT(*) FROM Notificaciones WHERE ID_Usuario = ?) AS permisos
   `;
-  db.query(sql, [id, id, id], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+
+  db.query(sql, [id, id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener estadísticas del empleado:', err);
+      return res.status(500).json({ error: 'Error al obtener estadísticas del empleado' });
+    }
+
     res.json(results[0]);
   });
 });
-
 
 /**
  * @swagger
