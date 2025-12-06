@@ -1887,23 +1887,23 @@ app.get('/permisos/usuario/:id', async (req, res) => {
 app.get('/permisos/pendientes', async (req, res) => {
   try {
     const [rows] = await db.promise().query(`
-      SELECT 
-        tp.ID_tipoPermiso,
-        tp.tipo AS tipoPermiso,
-        tp.mensaje,
-        tp.Fecha_Solicitud,
-        u.ID_Usuario,
-        u.Nombre AS nombre_usuario,
-        u.Email,
-        d.tipo AS departamento,
-        COALESCE(ep.Estado, 'Pendiente') AS estadoPermiso
-      FROM TipoPermiso tp
-      LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
-      LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
-      LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
-      LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
-      WHERE COALESCE(ep.Estado, 'Pendiente') = 'Pendiente'
-      ORDER BY tp.Fecha_Solicitud DESC
+    SELECT 
+      tp.ID_tipoPermiso,
+      tp.tipo AS tipoPermiso,
+      tp.mensaje,
+      tp.Fecha_Solicitud,
+      u.ID_Usuario,
+      u.Nombre AS nombre_usuario,
+      u.Email,
+      d.tipo AS departamento,
+      COALESCE(ep.Estado, 'Pendiente') AS estadoPermiso
+    FROM TipoPermiso tp
+    LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+    LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
+    LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
+    LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
+    WHERE COALESCE(ep.Estado, 'Pendiente') = 'Pendiente'
+    ORDER BY tp.Fecha_Solicitud DESC;
     `);
     res.json(rows);
   } catch (error) {
