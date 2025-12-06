@@ -1828,9 +1828,9 @@ app.get('/permisos/usuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await db.promise().query(`
-      SELECT tp.*, d.Nombre_Departamento
+      SELECT tp.*, d.tipo AS Nombre_Departamento
       FROM TipoPermiso tp
-      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      JOIN Departamento d ON tp.id_departamento = d.id_departamento
       WHERE tp.ID_Usuario = ?
       ORDER BY tp.Fecha_Solicitud DESC
     `, [id]);
