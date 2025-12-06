@@ -1766,10 +1766,18 @@ app.post('/permisos', async (req, res) => {
 app.get('/permisos', async (req, res) => {
   try {
     const [rows] = await db.promise().query(`
-      SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
+      SELECT 
+        tp.ID_tipoPermiso,
+        tp.ID_Usuario,
+        tp.id_departamento,
+        tp.tipo,
+        tp.mensaje,
+        tp.Fecha_Solicitud,
+        u.Nombre AS nombre_usuario,
+        d.tipo AS Nombre_Departamento
       FROM TipoPermiso tp
       JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
-      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      JOIN Departamento d ON tp.id_departamento = d.id_departamento
       ORDER BY tp.Fecha_Solicitud DESC
     `);
     res.json(rows);
