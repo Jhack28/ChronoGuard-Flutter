@@ -1171,7 +1171,7 @@ app.get('/empleado/:id/estadisticas', (req, res) => {
   const sql = `
     SELECT
       (SELECT COUNT(*) FROM Horarios WHERE ID_Usuario = ?) AS asistencias,
-      (SELECT COUNT(*) FROM Notificaciones WHERE ID_Usuario = ?) AS permisos,
+      (SELECT COUNT(*) FROM Notificaciones WHERE ID_Usuario = ?) AS permisos
   `;
   db.query(sql, [id, id, id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
