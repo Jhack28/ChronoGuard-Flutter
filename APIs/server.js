@@ -344,7 +344,8 @@ app.get('/empleado/lista', (req, res) => {
  *       200:
  *         description: Datos del usuario
  *       404:
- *         description: Usuario no encontrado
+ *   
+      description: Usuario no encontrado
  *       500:
  *         description: Error interno
  */
@@ -360,7 +361,7 @@ app.get('/usuario/:id', (req, res) => {
     FROM Usuarios u
     LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
     LEFT JOIN Departamento d ON u.id_departamento = d.id_departamento
-    WHERE u.ID_Usuario = `,
+    WHERE u.ID_Usuario = ?`,
     [id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -369,7 +370,6 @@ app.get('/usuario/:id', (req, res) => {
     }
   );
 });
-
 // Crear empleado (hashea password con MD5)
 /**
  * @swagger
