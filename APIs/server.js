@@ -1148,7 +1148,8 @@ app.get('/admin/estadisticas/:idUsuario', (req, res) => {
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID del usuario empleado
+ *           minimum: 1
+ *         description: ID numérico del usuario empleado. Solo se aceptan dígitos (0-9).
  *     responses:
  *       200:
  *         description: Estadísticas del empleado
@@ -1161,17 +1162,19 @@ app.get('/admin/estadisticas/:idUsuario', (req, res) => {
  *                   type: integer
  *                 permisos:
  *                   type: integer
- *                 retrasos:
- *                   type: integer
+ *       400:
+ *         description: ID de empleado inválido (no numérico o formato incorrecto)
  *       500:
- *         description: Error interno
+ *         description: Error interno al obtener las estadísticas
  */
 app.get('/empleado/:id/estadisticas', (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const idParam = req.params.id;
 
-  if (Number.isNaN(id)) {
+  if (!/^[0-9]+$/.test(idParam)) {
     return res.status(400).json({ error: 'ID de empleado inválido' });
   }
+
+  const id = parseInt(idParam, 10);
 
   const sql = `
     SELECT
