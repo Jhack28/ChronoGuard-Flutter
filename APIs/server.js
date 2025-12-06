@@ -1890,7 +1890,7 @@ app.get('/permisos/pendientes', async (req, res) => {
       SELECT tp.*, u.Nombre AS nombre_usuario, d.Nombre_Departamento
       FROM TipoPermiso tp
       JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
-      JOIN Departamento d ON tp.ID_Departamento = d.ID_Departamento
+      JOIN Departamento d ON tp.id_departamento = d.id_departamento
       WHERE tp.Estado = 'Pendiente'
       ORDER BY tp.Fecha_Solicitud DESC
     `);
