@@ -22,6 +22,10 @@ class Permiso {
   });
 
   factory Permiso.fromJson(Map<String, dynamic> json) {
+    // Debug: imprimir el JSON recibido
+    print('DEBUG Permiso.fromJson recibido: ${json.keys.toList()}');
+    print('DEBUG JSON completo: $json');
+
     // Soportar múltiples formas de respuesta del backend (v1/v2)
     final id =
         json['ID_tipoPermiso'] ??
@@ -70,6 +74,8 @@ class Permiso {
     String estadoFinal = estado.toString().isEmpty
         ? 'Pendiente'
         : estado.toString().trim();
+
+    print('DEBUG estadoPermiso final: $estadoFinal');
 
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,

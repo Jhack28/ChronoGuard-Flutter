@@ -1559,31 +1559,21 @@ app.get('/permisos/lista', async (req, res) => {
 
     // Ahora obtener la lista
     const sql = `
-      SELECT tp.ID_tipoPermiso,
-            tp.tipo AS tipoPermiso,
-            tp.mensaje,
-            tp.Fecha_Solicitud,
-            u.ID_Usuario,
-            u.Nombre,
-            u.Email,
-            d.tipo AS departamento,
-            COALESCE(n.Estado, 'Pendiente') AS estadoPermiso
+      SELECT 
+        tp.ID_tipoPermiso,
+        tp.tipo AS tipoPermiso,
+        tp.mensaje,
+        tp.Fecha_Solicitud,
+        u.ID_Usuario,
+        u.Nombre,
+        u.Email,
+        d.tipo AS departamento,
+        IFNULL(n.Estado, 'Pendiente') AS estadoPermiso
       FROM TipoPermiso tp
       LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
       LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
       LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
-      WHERE n.ID_notificacion = (
-        SELECT MAX(ID_notificacion) FROM Notificaciones 
-        WHERE ID_tipoPermiso = tp.ID_tipoPermiso
-      ) OR n.ID_notificacion IS NULL
-      ORDER BY 
-        CASE 
-          WHEN COALESCE(n.Estado, 'Pendiente') = 'Pendiente' THEN 0 
-          WHEN COALESCE(n.Estado, 'Pendiente') = 'Aprobado' THEN 1 
-          WHEN COALESCE(n.Estado, 'Pendiente') = 'Rechazado' THEN 2 
-          ELSE 3 
-        END ASC,
-        tp.Fecha_Solicitud DESC
+      ORDER BY tp.Fecha_Solicitud DESC
     `;
 
     db.query(sql, (err, results) => {
