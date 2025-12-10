@@ -157,7 +157,6 @@ class ApiService {
     // intentamos `/permisos` y finalmente devolvemos la unión (única por id).
     final endpoints = [
       Uri.parse('$baseUrl/permisos/lista'),
-      Uri.parse('$baseUrl/permisos'),
     ];
 
     final Map<int, Permiso> merged = {};

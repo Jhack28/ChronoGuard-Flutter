@@ -22,60 +22,37 @@ class Permiso {
   });
 
   factory Permiso.fromJson(Map<String, dynamic> json) {
-    // Debug: imprimir el JSON recibido
-    print('DEBUG Permiso.fromJson recibido: ${json.keys.toList()}');
-    print('DEBUG JSON completo: $json');
-
-    // Soportar múltiples formas de respuesta del backend (v1/v2)
-    final id =
-        json['ID_tipoPermiso'] ??
-        json['ID_tipoPermiso'.toLowerCase()] ??
-        json['id'] ??
-        0;
+    final id = json['IDtipoPermiso'] ?? json['ID_tipoPermiso'] ?? json['id'] ?? 0;
     final tipo = json['tipoPermiso'] ?? json['tipo'] ?? '';
     final mensaje = json['mensaje'] ?? json['Mensaje'] ?? '';
+
     DateTime fecha;
     try {
       final rawFecha =
+          json['FechaSolicitud'] ??
           json['Fecha_Solicitud'] ??
-          json['Fecha_Solicitud'.toLowerCase()] ??
-          json['Fecha_Solicitud'.toUpperCase()];
+          json['fechasolicitud'];
       fecha = rawFecha != null
           ? DateTime.parse(rawFecha.toString())
           : DateTime.now();
-    } catch (e) {
+    } catch (_) {
       fecha = DateTime.now();
     }
+
     final idUsr =
-        json['ID_Usuario'] ??
-        json['ID_Usuario'.toLowerCase()] ??
-        json['ID'] ??
-        json['idUsuario'] ??
-        0;
-    final nombre =
-        json['Nombre'] ??
-        json['nombre'] ??
-        json['nombre_usuario'] ??
-        json['nombre_usuario'.toLowerCase()] ??
-        '';
+        json['IDUsuario'] ?? json['ID_Usuario'] ?? json['idUsuario'] ?? 0;
+    final nombre = json['Nombre'] ?? json['nombre'] ?? '';
     final email = json['Email'] ?? json['email'] ?? '';
     final dept =
-        json['departamento'] ??
-        json['Nombre_Departamento'] ??
-        json['Nombre_Departamento'.toLowerCase()] ??
-        '';
-    final estado =
-        json['estadoPermiso'] ??
+        json['departamento'] ?? json['Nombre_Departamento'] ?? '';
+
+    final estado = json['estadoPermiso'] ??
         json['Estado'] ??
         json['estado'] ??
         'Pendiente';
 
-    // Asegurar que el estado siempre tenga un valor válido
-    String estadoFinal = estado.toString().isEmpty
-        ? 'Pendiente'
-        : estado.toString().trim();
-
-    print('DEBUG estadoPermiso final: $estadoFinal');
+    final estadoFinal =
+        estado.toString().trim().isEmpty ? 'Pendiente' : estado.toString().trim();
 
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
