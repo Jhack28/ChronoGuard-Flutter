@@ -1571,8 +1571,11 @@ app.get('/permisos/lista', async (req, res) => {
       FROM TipoPermiso tp
       LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
       LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
-      LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso AND n.ID_Usuario = tp.ID_Usuario
-      GROUP BY tp.ID_tipoPermiso
+      LEFT JOIN (
+        SELECT DISTINCT ID_tipoPermiso, Estado
+        FROM Notificaciones
+        ORDER BY ID_tipoPermiso, FechaEnvio DESC
+      ) n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
       ORDER BY 
         CASE 
           WHEN COALESCE(n.Estado, 'Pendiente') = 'Pendiente' THEN 0 
@@ -1584,7 +1587,14 @@ app.get('/permisos/lista', async (req, res) => {
     `;
 
     db.query(sql, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        console.error('Error en /permisos/lista:', err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log('Resultados de /permisos/lista:', results.length, 'registros');
+      if (results.length > 0) {
+        console.log('Primer registro:', JSON.stringify(results[0], null, 2));
+      }
       res.json(results);
     });
   } catch (error) {

@@ -45,8 +45,11 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
   }
 
   Widget _buildEstadoChip(String estado) {
+    // Debug: asegurarse que el estado no esté vacío
+    String estadoMostrar = estado.isEmpty ? 'Pendiente' : estado;
+
     Color color;
-    switch (estado.toLowerCase()) {
+    switch (estadoMostrar.toLowerCase()) {
       case 'aprobado':
         color = Colors.green;
         break;
@@ -58,17 +61,21 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
         color = Colors.orange;
     }
     return Chip(
-      label: Text(estado),
+      label: Text(
+        estadoMostrar,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       backgroundColor: const Color.fromARGB(183, 61, 245, 255),
       labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     if (widget.permisos.isEmpty) {
       return const Center(child: Text('No hay permisos para mostrar.'));
     }
-  
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -78,10 +85,7 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
           children: [
             const Text(
               'Permisos Solicitados',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -110,7 +114,10 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.check, color: Colors.green),
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              ),
                               tooltip: 'Aprobar',
                               onPressed: _loading
                                   ? null
@@ -124,7 +131,10 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
                                   : () => _cambiarEstado(permiso, 'Rechazado'),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.undo, color: Colors.orange),
+                              icon: const Icon(
+                                Icons.undo,
+                                color: Colors.orange,
+                              ),
                               tooltip: 'Devolver a pendiente',
                               onPressed: _loading
                                   ? null

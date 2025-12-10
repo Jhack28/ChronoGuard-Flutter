@@ -61,7 +61,15 @@ class Permiso {
         json['Nombre_Departamento'.toLowerCase()] ??
         '';
     final estado =
-        json['estadoPermiso'] ?? json['Estado'] ?? json['estado'] ?? '';
+        json['estadoPermiso'] ??
+        json['Estado'] ??
+        json['estado'] ??
+        'Pendiente';
+
+    // Asegurar que el estado siempre tenga un valor válido
+    String estadoFinal = estado.toString().isEmpty
+        ? 'Pendiente'
+        : estado.toString().trim();
 
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
@@ -72,7 +80,7 @@ class Permiso {
       nombreUsuario: nombre.toString(),
       emailUsuario: email.toString(),
       departamento: dept.toString(),
-      estadoPermiso: estado.toString(),
+      estadoPermiso: estadoFinal,
     );
   }
 }
