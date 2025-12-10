@@ -25,7 +25,7 @@ class Permiso {
     final id = json['IDtipoPermiso'] ?? json['ID_tipoPermiso'] ?? json['id'] ?? 0;
     final tipo = json['tipoPermiso'] ?? json['tipo'] ?? '';
     final mensaje = json['mensaje'] ?? json['Mensaje'] ?? '';
-
+  
     DateTime fecha;
     try {
       final rawFecha =
@@ -38,22 +38,23 @@ class Permiso {
     } catch (_) {
       fecha = DateTime.now();
     }
-
+  
     final idUsr =
         json['IDUsuario'] ?? json['ID_Usuario'] ?? json['idUsuario'] ?? 0;
+  
     final nombre = json['Nombre'] ?? json['nombre'] ?? '';
     final email = json['Email'] ?? json['email'] ?? '';
     final dept =
-        json['departamento'] ?? json['Nombre_Departamento'] ?? '';
-
+        json['departamento'] ?? json['Nombre_Departamento'] ?? json['departamento'.toLowerCase()] ?? '';
+  
     final estado = json['estadoPermiso'] ??
         json['Estado'] ??
         json['estado'] ??
         'Pendiente';
-
+  
     final estadoFinal =
         estado.toString().trim().isEmpty ? 'Pendiente' : estado.toString().trim();
-
+  
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
       tipoPermiso: tipo.toString(),

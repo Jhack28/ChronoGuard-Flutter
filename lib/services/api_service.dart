@@ -152,37 +152,23 @@ class ApiService {
   }
 
   /// Obtener lista de permisos con estados completos
-  static Future<List<Permiso>> fetchPermisos() async {
-    // Intentar primero el endpoint `/permisos/lista`, si no funciona
-    // intentamos `/permisos` y finalmente devolvemos la unión (única por id).
-    final endpoints = [
-      Uri.parse('$baseUrl/permisos/lista'),
-    ];
-
-    final Map<int, Permiso> merged = {};
-
-    for (final uri in endpoints) {
-      try {
-        final response = await http.get(uri);
-        if (response.statusCode != 200) continue;
-        final body = response.body.isNotEmpty ? response.body : '[]';
-        final List<dynamic> data = jsonDecode(body);
-        for (final item in data) {
-          try {
-            final permiso = Permiso.fromJson(item as Map<String, dynamic>);
-            merged[permiso.idTipoPermiso] = permiso;
-          } catch (e) {
-            print('Warning parsing permiso item: $e');
-          }
-        }
-      } catch (e) {
-        print('Warning calling $uri: $e');
-        continue;
-      }
+static Future<List<Permiso>> fetchPermisos() async {
+  try {
+    final response = await http.get(Uri.parse('$baseUrl/permisos/lista'));
+    if (response.statusCode == 200) {
+      final body = response.body.isNotEmpty ? response.body : '[]';
+      final List<dynamic> data = jsonDecode(body);
+      return data.map((json) => Permiso.fromJson(json)).toList();
+    } else {
+      print('Error al cargar permisos: código ${response.statusCode}');
+      return [];
     }
-
-    return merged.values.toList();
+  } catch (e) {
+    print('Error en fetchPermisos: $e');
+    return [];
   }
+}
+
 
   /// Actualizar estado del permiso
   static Future<void> actualizarEstadoPermiso(
