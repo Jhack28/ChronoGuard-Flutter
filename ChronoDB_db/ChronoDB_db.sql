@@ -200,4 +200,5 @@ select*from notificaciones;
 select*from horarios;
 select*from estadopermisos;
 select*from tipopermiso;
+select*from Asistencias;
 

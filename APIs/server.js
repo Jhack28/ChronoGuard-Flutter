@@ -1529,36 +1529,67 @@ app.delete("/horarios/:id", (req, res) => {
  *       500:
  *         description: Error interno del servidor
  */
-app.get('/permisos/lista', (req, res) => {
-  const sql = `
-    SELECT tp.ID_tipoPermiso,
-          tp.tipo AS tipoPermiso,
-          tp.mensaje,
-          tp.Fecha_Solicitud,
-          u.ID_Usuario,
-          u.Nombre,
-          u.Email,
-          d.tipo AS departamento,
-          COALESCE(ep.Estado, 'Pendiente') AS estadoPermiso
-    FROM TipoPermiso tp
-    LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
-    LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
-    LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
-    LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
-    ORDER BY 
-      CASE 
-        WHEN ep.Estado = 'Pendiente' THEN 0 
-        WHEN ep.Estado = 'Aprobado' THEN 1 
-        WHEN ep.Estado = 'Rechazado' THEN 2 
-        ELSE 3 
-      END ASC,
-      tp.Fecha_Solicitud DESC
-  `;
+app.get('/permisos/lista', async (req, res) => {
+  try {
+    // Primero, crear notificaciones para cualquier permiso que no las tenga
+    await new Promise((resolve, reject) => {
+      const sqlCreate = `
+        INSERT INTO Notificaciones (ID_tipoPermiso, ID_Usuario, ID_EstadoPermiso, Mensaje, Estado, FechaEnvio)
+        SELECT 
+          tp.ID_tipoPermiso,
+          tp.ID_Usuario,
+          1,
+          'Solicitud de permiso',
+          'Pendiente',
+          NOW()
+        FROM TipoPermiso tp
+        WHERE NOT EXISTS (
+          SELECT 1 FROM Notificaciones n 
+          WHERE n.ID_tipoPermiso = tp.ID_tipoPermiso
+        )
+      `;
+      db.query(sqlCreate, (err) => {
+        if (err) {
+          console.warn('Advertencia al crear notificaciones faltantes:', err.message);
+          // No fallar por esto
+        }
+        resolve();
+      });
+    });
 
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
+    // Ahora obtener la lista
+    const sql = `
+      SELECT tp.ID_tipoPermiso,
+            tp.tipo AS tipoPermiso,
+            tp.mensaje,
+            tp.Fecha_Solicitud,
+            u.ID_Usuario,
+            u.Nombre,
+            u.Email,
+            d.tipo AS departamento,
+            COALESCE(n.Estado, 'Pendiente') AS estadoPermiso
+      FROM TipoPermiso tp
+      LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+      LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
+      LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso AND n.ID_Usuario = tp.ID_Usuario
+      GROUP BY tp.ID_tipoPermiso
+      ORDER BY 
+        CASE 
+          WHEN COALESCE(n.Estado, 'Pendiente') = 'Pendiente' THEN 0 
+          WHEN COALESCE(n.Estado, 'Pendiente') = 'Aprobado' THEN 1 
+          WHEN COALESCE(n.Estado, 'Pendiente') = 'Rechazado' THEN 2 
+          ELSE 3 
+        END ASC,
+        tp.Fecha_Solicitud DESC
+    `;
+
+    db.query(sql, (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 /**
