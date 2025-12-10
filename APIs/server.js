@@ -1551,8 +1551,8 @@ app.get('/permisos/lista', (req, res) => {
         WHEN ep.Estado = 'Aprobado' THEN 1 
         WHEN ep.Estado = 'Rechazado' THEN 2 
         ELSE 3 
-      END,
-    tp.Fecha_Solicitud DESC
+      END ASC,
+      tp.Fecha_Solicitud DESC
   `;
 
   db.query(sql, (err, results) => {
