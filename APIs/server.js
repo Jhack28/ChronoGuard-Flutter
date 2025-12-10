@@ -1571,11 +1571,11 @@ app.get('/permisos/lista', async (req, res) => {
       FROM TipoPermiso tp
       LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
       LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
-      LEFT JOIN (
-        SELECT DISTINCT ID_tipoPermiso, Estado
-        FROM Notificaciones
-        ORDER BY ID_tipoPermiso, FechaEnvio DESC
-      ) n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
+      LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
+      WHERE n.ID_notificacion = (
+        SELECT MAX(ID_notificacion) FROM Notificaciones 
+        WHERE ID_tipoPermiso = tp.ID_tipoPermiso
+      ) OR n.ID_notificacion IS NULL
       ORDER BY 
         CASE 
           WHEN COALESCE(n.Estado, 'Pendiente') = 'Pendiente' THEN 0 
