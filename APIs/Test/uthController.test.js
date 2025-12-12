@@ -4,11 +4,6 @@ const { app, server } = require('../server'); // ajusta ruta si exportas la app
 
 describe('Controlador de Autenticación /login', () => {
   afterAll(done => {
-    // Cerrar conexión de DB si usas un pool
-    if (global.db && global.db.end) {
-      global.db.end(); // o db.end() según cómo lo exportes
-    }
-
     server.close(() => {
       done();
     });

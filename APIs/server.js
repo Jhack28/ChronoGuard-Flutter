@@ -80,7 +80,9 @@ async function connectDb() {
     }
   }
   console.error('Fallo al conectar a MySQL en todos los puertos probados. Revisa credenciales/servicio.');
-  process.exit(1);
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
 }
 
 
@@ -119,7 +121,7 @@ connectDb().then(() => {
   })();
 });
 
-module.exports = app;
+module.exports = { app, server };
 
 // ---------- Helpers para Horarios ----------
 const VALID_DIAS = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
@@ -2079,3 +2081,4 @@ app.delete('/permisos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar permiso' });
   }
 });
+

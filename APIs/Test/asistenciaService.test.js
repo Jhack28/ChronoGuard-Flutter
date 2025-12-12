@@ -4,16 +4,12 @@ const { app, server } = require('../server'); // ajusta ruta si exportas la app
 
 describe('Servicios de Asistencia', () => {
   afterAll(done => {
-    // Cerrar conexión de DB si usas un pool
-    if (global.db && global.db.end) {
-      global.db.end(); // o db.end() según cómo lo exportes
-    } 
     server.close(() => {
       done();
     }
     );
   });
-  
+
   test('API-005 Marcar entrada', async () => {
     const res = await request(app)
       .post('/api/asistencia/entrada')
