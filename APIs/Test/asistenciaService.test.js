@@ -6,7 +6,7 @@ describe('Servicios de Asistencia', () => {
   test('API-005 Marcar entrada', async () => {
     const res = await request(app)
       .post('/asistencia/entrada')
-      .send({ empleado_id: 1 });
+      .send({ ID_Usuario: 1 });
 
     expect(res.status).toBe(201);
   });
@@ -14,7 +14,7 @@ describe('Servicios de Asistencia', () => {
   test('API-006 Marcar salida', async () => {
     const res = await request(app)
       .post('/asistencia/salida')
-      .send({ empleado_id: 1 });
+      .send({ ID_Usuario: 1 });
 
     expect(res.status).toBe(201);
   });

@@ -739,35 +739,6 @@ app.delete(['/usuarios/:id', '/usuario/:id', '/usuario/eliminar/:id', '/usuario/
   });
 });
 
-
-/**
- * @swagger
- * /horarios/registrar:
- *   post:
- *     summary: Registrar un nuevo horario para un empleado
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               ID_Usuario:
- *                 type: integer
- *               Dia:
- *                 type: string
- *               Hora_Entrada:
- *                 type: string
- *               Hora_Salida:
- *                 type: string
- *     responses:
- *       201:
- *         description: Horario registrado exitosamente
- *       400:
- *         description: Datos inválidos o faltantes
- *       500:
- *         description: Error interno del servidor
- */
 // Registrar asistencia
 /**
  * @swagger
