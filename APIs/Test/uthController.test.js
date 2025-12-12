@@ -3,11 +3,6 @@ const request = require('supertest');
 const { app, server } = require('../server'); // ajusta ruta si exportas la app
 
 describe('Controlador de Autenticación /login', () => {
-  afterAll(done => {
-    server.close(() => {
-      done();
-    });
-  });
   test('UT-B001 Login con credenciales válidas', async () => {
     const res = await request(app)
       .post('/login')

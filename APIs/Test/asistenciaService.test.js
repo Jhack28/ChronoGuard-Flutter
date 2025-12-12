@@ -3,13 +3,6 @@ const request = require('supertest');
 const { app, server } = require('../server'); // ajusta ruta si exportas la app
 
 describe('Servicios de Asistencia', () => {
-  afterAll(done => {
-    server.close(() => {
-      done();
-    }
-    );
-  });
-
   test('API-005 Marcar entrada', async () => {
     const res = await request(app)
       .post('/api/asistencia/entrada')

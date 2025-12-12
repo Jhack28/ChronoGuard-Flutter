@@ -3,12 +3,6 @@ const request = require('supertest');
 const { app, server } = require('../server');
 
 describe('Servicios de Empleados', () => {
-   // ajusta ruta si exportas la app
-  afterAll(done => {
-    server.close(() => {
-      done();
-    });
-  });
   let nuevoId;
 
   test('UT-B012 Crear empleado válido (POST /admin)', async () => {
