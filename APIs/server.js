@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const crypto = require('crypto');
 
+
 // Primero declara express app
 const app = express();
 const path = require('path');
@@ -2078,3 +2079,4 @@ app.delete('/permisos/:id', async (req, res) => {
   }
 });
 
+module.exports = app;
