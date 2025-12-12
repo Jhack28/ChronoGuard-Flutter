@@ -1,6 +1,6 @@
 // APIs/Test/asistenciaService.test.js
 const request = require('supertest');
-const { app, server } = require('../server'); // ajusta ruta si exportas la app
+const app = require('../server'); // ajusta ruta si exportas la app
 
 describe('Servicios de Asistencia', () => {
   test('API-005 Marcar entrada', async () => {

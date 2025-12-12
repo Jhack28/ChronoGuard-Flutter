@@ -1,6 +1,6 @@
 // APIs/Test/uthController.test.js
 const request = require('supertest');
-const { app, server } = require('../server'); // ajusta ruta si exportas la app
+const app = require('../server'); // ajusta ruta si exportas la app
 
 describe('Controlador de Autenticación /login', () => {
   test('UT-B001 Login con credenciales válidas', async () => {

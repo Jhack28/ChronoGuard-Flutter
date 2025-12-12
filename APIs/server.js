@@ -79,57 +79,49 @@ async function connectDb() {
       console.error(`No se pudo conectar a MySQL en ${DB_HOST}:${port} -> ${err.code || err.message}`);
     }
   }
-  console.error('Fallo al conectar a MySQL en todos los puertos probados. Revisa credenciales/servicio.');
+    console.error('Fallo al conectar a MySQL en todos los puertos probados. Revisa credenciales/servicio.');
+
     if (process.env.NODE_ENV !== 'test') {
       process.exit(1);
     }
 }
 
 
-connectDb().then(async () => {
+connectDb().then(() => {
   console.log('Inicializando tablas y endpoints...');
 
-  try {
-    const createAsistencias = `
-      CREATE TABLE IF NOT EXISTS Asistencias (
-        IDAsistencia INT PRIMARY KEY AUTO_INCREMENT,
-        IDUsuario INT NOT NULL,
-        Nombre VARCHAR(200) DEFAULT NULL,
-        Entrada DATETIME DEFAULT NULL,
-        Salida DATETIME DEFAULT NULL,
-        Estado VARCHAR(50) DEFAULT NULL,
-        FOREIGN KEY (IDUsuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
-      ) ENGINE=InnoDB;
-    `;
-    await db.promise().query(createAsistencias);
-    console.log('Verificado: tabla Asistencias existe (o fue creada).');
-  } catch (initErr) {
-    console.error('Error al asegurar existencia de tabla Asistencias:', initErr);
-  }
+  (async () => {
+    try {
+      // Asegurar que la tabla Asistencias exista (evita errores si la DB no la contiene)
+      const createAsistencias = `
+        CREATE TABLE IF NOT EXISTS Asistencias (
+          ID_Asistencia INT PRIMARY KEY AUTO_INCREMENT,
+          ID_Usuario INT NOT NULL,
+          Nombre VARCHAR(200) DEFAULT NULL,
+          Entrada DATETIME DEFAULT NULL,
+          Salida DATETIME DEFAULT NULL,
+          Estado VARCHAR(50) DEFAULT NULL,
+          FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+      `;
+      await db.promise().query(createAsistencias);
+      console.log('Verificado: tabla Asistencias existe (o fue creada).');
+    } catch (initErr) {
+      console.error('Error al asegurar existencia de tabla Asistencias:', initErr);
+    }
 
-  // Solo levantar el servidor si NO estamos en tests
-  if (process.env.NODE_ENV !== 'test') {
+    // Iniciar el servidor en puerto 3000
     const PORT = 3000;
-    const HOST = process.env.APIHOST || '0.0.0.0';
-
-    const server = app.listen(PORT, HOST, () => {
-      const displayHost = process.env.APIHOST || '0.0.0.0';
-      console.log(
-        `API escuchando en http://${displayHost}:${PORT}  — (bind ${HOST}:${PORT})`
-      );
+    // Escuchar en todas las interfaces para aceptar conexiones remotas;
+    // usa la variable de entorno API_HOST si quieres forzar una IP concreta.
+    const HOST = process.env.API_HOST || '0.0.0.0';
+    app.listen(PORT, HOST, () => {
+      const displayHost = process.env.API_HOST || '0.0.0.0 (todas las interfaces)';
+      console.log(`API escuchando en http://${displayHost}:${PORT}  — (bind ${HOST}:${PORT})`);
     });
-
-    module.exports = { app, server };
-  } else {
-    // En modo test solo exportamos app; el test puede usar supertest(app)
-    module.exports = { app };
-  }
-}).catch(() => {
-  console.error('Fallo al conectar a MySQL en todos los puertos probados. Revisa credenciales/servicio.');
-  if (process.env.NODE_ENV !== 'test') {
-    process.exit(1);
-  }
+  })();
 });
+
 // ---------- Helpers para Horarios ----------
 const VALID_DIAS = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
 
@@ -2089,3 +2081,14 @@ app.delete('/permisos/:id', async (req, res) => {
   }
 });
 
+// Iniciar el servidor en puerto 3000
+const PORT = 3000;
+const HOST = process.env.APIHOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  const displayHost = process.env.APIHOST || '0.0.0.0';
+  console.log(`API escuchando en http://${displayHost}:${PORT}  — (bind ${HOST}:${PORT})`);
+});
+
+// Exportar app para supertest / jest
+module.exports = app;

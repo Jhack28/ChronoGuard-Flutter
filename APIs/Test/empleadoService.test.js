@@ -1,6 +1,6 @@
 // APIs/Test/empleadoService.test.js
 const request = require('supertest');
-const { app, server } = require('../server');
+const app = require('../server');
 
 describe('Servicios de Empleados', () => {
   let nuevoId;
