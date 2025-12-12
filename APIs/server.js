@@ -345,8 +345,7 @@ app.get('/empleado/lista', (req, res) => {
  *       200:
  *         description: Datos del usuario
  *       404:
- *   
-      description: Usuario no encontrado
+ *         description: Usuario no encontrado
  *       500:
  *         description: Error interno
  */
