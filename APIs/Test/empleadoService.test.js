@@ -10,8 +10,8 @@ describe('Servicios de Empleados', () => {
       .post('/admin')
       .send({
         nombre: 'Juan Pérez',
-        email: 'juan@empresa.com',
-        password: 'juan123',
+        email: 'juan@correo.com',
+        password: 'juanes123',
         rol: 3, // empleado
         numero_de_documento: '1234567890',
         departamento: 1,
@@ -47,10 +47,10 @@ describe('Servicios de Empleados', () => {
     const res = await request(app)
       .put(`/usuario/${nuevoId}`)
       .send({
-        nombre: 'Juan Inactivo',
-        email: 'juan.inactivo@empresa.com',
+        nombre: 'Mario',
+        email: 'empleado@correo.com',
         rol: 3,
-        departamento: 2,
+        departamento: 4,
         numero_de_documento: '1234567890',
         // si agregas campo Estado en el body lo puedes manejar aquí
       });
