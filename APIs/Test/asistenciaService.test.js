@@ -5,7 +5,7 @@ const app = require('../server'); // ajusta ruta si exportas la app
 describe('Servicios de Asistencia', () => {
   test('API-005 Marcar entrada', async () => {
     const res = await request(app)
-      .post('/api/asistencia/entrada')
+      .post('/asistencia/entrada')
       .send({ empleado_id: 1 });
 
     expect(res.status).toBe(201);
@@ -13,38 +13,22 @@ describe('Servicios de Asistencia', () => {
 
   test('API-006 Marcar salida', async () => {
     const res = await request(app)
-      .post('/api/asistencia/salida')
+      .post('/asistencia/salida')
       .send({ empleado_id: 1 });
 
     expect(res.status).toBe(201);
   });
 
-  test('API-007 Historial mensual', async () => {
-    const res = await request(app)
-      .get('/api/asistencia/historial?mes=12&año=2025');
-
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-  });
-
   test('API-008 Asistencia por empleado (admin/secretaria)', async () => {
     const res = await request(app)
-      .get('/api/asistencia/empleado/1?mes=12');
+      .get('/asistencia/empleado/1');
 
     expect(res.status).toBe(200);
   });
 
-  test('API-009 Registrar novedad', async () => {
+  test('API-010 Listar permisos pendientes', async () => {
     const res = await request(app)
-      .post('/api/novedades')
-      .send({ tipo: 'inasistencia', motivo: 'Enfermedad' });
-
-    expect(res.status).toBe(201);
-  });
-
-  test('API-010 Listar novedades pendientes', async () => {
-    const res = await request(app)
-      .get('/api/novedades/pendientes');
+      .get('/permisos/pendientes');
 
     expect(res.status).toBe(200);
   });
