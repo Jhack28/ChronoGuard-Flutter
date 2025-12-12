@@ -16,12 +16,12 @@ describe('Servicios de Asistencia', () => {
       .post('/asistencia/salida')
       .send({ ID_Usuario: 1 });
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
   });
 
-  test('API-008 Asistencia por empleado (admin/secretaria)', async () => {
+  test('API-008 lista de Asistencia ', async () => {
     const res = await request(app)
-      .get('/asistencia/empleado/1');
+      .get('/asistencia/lista');
 
     expect(res.status).toBe(200);
   });
