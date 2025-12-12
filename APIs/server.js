@@ -119,6 +119,8 @@ connectDb().then(() => {
   })();
 });
 
+module.exports = app;
+
 // ---------- Helpers para Horarios ----------
 const VALID_DIAS = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
 
@@ -2077,5 +2079,3 @@ app.delete('/permisos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar permiso' });
   }
 });
-
-module.exports = app;

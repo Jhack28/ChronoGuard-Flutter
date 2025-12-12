@@ -1,8 +1,18 @@
 // APIs/Test/uthController.test.js
 const request = require('supertest');
-const app = require('../server'); // ajusta ruta si exportas la app
+const { app, server } = require('../server'); // ajusta ruta si exportas la app
 
 describe('Controlador de Autenticación /login', () => {
+  afterAll(done => {
+    // Cerrar conexión de DB si usas un pool
+    if (global.db && global.db.end) {
+      global.db.end(); // o db.end() según cómo lo exportes
+    }
+
+    server.close(() => {
+      done();
+    });
+  });
   test('UT-B001 Login con credenciales válidas', async () => {
     const res = await request(app)
       .post('/login')

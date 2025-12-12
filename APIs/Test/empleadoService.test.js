@@ -1,8 +1,19 @@
 // APIs/Test/empleadoService.test.js
 const request = require('supertest');
-const app = require('../server');
+const { app, server } = require('../server');
 
 describe('Servicios de Empleados', () => {
+   // ajusta ruta si exportas la app
+  afterAll(done => {
+    // Cerrar conexión de DB si usas un pool
+    if (global.db && global.db.end) {
+      global.db.end(); // o db.end() según cómo lo exportes
+    }
+
+    server.close(() => {
+      done();
+    });
+  });
   let nuevoId;
 
   test('UT-B012 Crear empleado válido (POST /admin)', async () => {
