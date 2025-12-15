@@ -45,11 +45,11 @@ describe('Servicios de Empleados', () => {
 
   test('UT-B015 Desactivar empleado (PUT /usuario/:id Estado Inactivo)', async () => {
     const res = await request(app)
-      .put(`/usuario/${nuevoId}`)
+      .put(`/usuario/inactivar/${nuevoId}`)
       .send({
-        nombre: 'Mario',
-        email: 'empleado@correo.com',
-        rol: 3,
+        nombre: 'Juan Actualizado',
+        email: 'juan.actualizado@empresa.com',
+        rol: 2,
         departamento: 4,
         numero_de_documento: '1234567890',
         // si agregas campo Estado en el body lo puedes manejar aquí

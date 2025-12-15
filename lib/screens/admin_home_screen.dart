@@ -97,9 +97,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         final sa = a.estadoPermiso.toLowerCase();
         final sb = b.estadoPermiso.toLowerCase();
         int rank(String s) {
-          if (s.contains('pend')) return 0;
-          if (s.contains('aprob')) return 1;
-          if (s.contains('rech')) return 2;
+          if (s.contains('Pendientes')) return 0;
+          if (s.contains('Aprobados')) return 1;
+          if (s.contains('Rechazado')) return 2;
           return 3;
         }
 

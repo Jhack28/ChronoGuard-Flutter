@@ -1939,6 +1939,138 @@ app.get('/permisos/pendientes', async (req, res) => {
 
 
 
+// ================== ENDPOINT: LISTAR TODOS LOS PERMISOS ==================
+/**
+ * @swagger
+ * /permisos/lista:
+ *   get:
+ *     summary: Obtiene la lista de todas las solicitudes de permisos
+ *     tags:
+ *       - Permisos
+ *     responses:
+ *       200:
+ *         description: Lista de todos los permisos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   idUsuario:
+ *                     type: integer
+ *                   nombreUsuario:
+ *                     type: string
+ *                   id_departamento:
+ *                     type: integer
+ *                   departamento:
+ *                     type: string
+ *                   tipo:
+ *                     type: string
+ *                   mensaje:
+ *                     type: string
+ *                   fechaSolicitud:
+ *                     type: string
+ *                     format: date
+ *                   estadoPermiso:
+ *                     type: string
+ *       500:
+ *         description: Error interno del servidor
+ */
+app.get('/permisos/lista', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT 
+        tp.ID_tipoPermiso as id,
+        tp.ID_Usuario as idUsuario,
+        u.Nombre as nombreUsuario,
+        tp.id_departamento,
+        d.tipo as departamento,
+        tp.tipo,
+        tp.mensaje,
+        tp.Fecha_Solicitud as fechaSolicitud,
+        COALESCE(ep.Estado, 'Pendiente') as estadoPermiso
+      FROM TipoPermiso tp
+      LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
+      LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
+      LEFT JOIN Notificaciones n ON tp.ID_tipoPermiso = n.ID_tipoPermiso
+      LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
+      ORDER BY tp.Fecha_Solicitud DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener lista de permisos:', error);
+    res.status(500).json({ error: 'Error al obtener lista de permisos' });
+  }
+});
+
+// ================== ENDPOINT: CREAR PERMISO ==================
+/**
+ * @swagger
+ * /permisos/crear:
+ *   post:
+ *     summary: Crea una nueva solicitud de permiso
+ *     tags:
+ *       - Permisos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *               idDepartamento:
+ *                 type: integer
+ *               tipo:
+ *                 type: string
+ *               mensaje:
+ *                 type: string
+ *               fechaInicio:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Permiso creado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 id:
+ *                   type: integer
+ *       400:
+ *         description: Datos inválidos
+ *       500:
+ *         description: Error interno del servidor
+ */
+app.post('/permisos/crear', async (req, res) => {
+  try {
+    const { idUsuario, idDepartamento, tipo, mensaje, fechaInicio } = req.body;
+    if (!idUsuario || !tipo || !mensaje || !fechaInicio) {
+      return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+    const [result] = await db.promise().query(
+      `INSERT INTO TipoPermiso (ID_Usuario, id_departamento, tipo, mensaje, Fecha_Solicitud) VALUES (?, ?, ?, ?, ?)`,
+      [idUsuario, idDepartamento || null, tipo, mensaje, fechaInicio]
+    );
+    // Insertar notificación con estado Pendiente
+    await db.promise().query(
+      `INSERT INTO Notificaciones (ID_Usuario, ID_tipoPermiso, Mensaje, Estado, FechaEnvio) VALUES (?, ?, 'Solicitud pendiente', 'Pendiente', NOW())`,
+      [idUsuario, result.insertId]
+    );
+    res.status(201).json({ message: 'Permiso creado correctamente', id: result.insertId });
+  } catch (error) {
+    console.error('Error al crear permiso:', error);
+    res.status(500).json({ error: 'Error al crear permiso' });
+  }
+});
+
 // ================== ENDPOINT: ACTUALIZAR ESTADO DEL PERMISO(Aprobado/Rechazado)==================
 /**
  * @swagger
