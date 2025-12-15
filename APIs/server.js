@@ -1505,64 +1505,28 @@ app.delete("/horarios/:id", (req, res) => {
  */
 app.get('/permisos/lista', async (req, res) => {
   try {
-    // Primero, crear notificaciones para cualquier permiso que no las tenga
-    await new Promise((resolve, reject) => {
-      const sqlCreate = `
-        INSERT INTO Notificaciones (ID_tipoPermiso, ID_Usuario, ID_EstadoPermiso, Mensaje, Estado, FechaEnvio)
-        SELECT 
-          tp.ID_tipoPermiso,
-          tp.ID_Usuario,
-          1,
-          'Solicitud de permiso',
-          'Pendiente',
-          NOW()
-        FROM TipoPermiso tp
-        WHERE NOT EXISTS (
-          SELECT 1 FROM Notificaciones n 
-          WHERE n.ID_tipoPermiso = tp.ID_tipoPermiso
-        )
-      `;
-      db.query(sqlCreate, (err) => {
-        if (err) {
-          console.warn('Advertencia al crear notificaciones faltantes:', err.message);
-          // No fallar por esto
-        }
-        resolve();
-      });
-    });
-
-    // Ahora obtener la lista
-    const sql = `
+    const [rows] = await db.promise().query(`
       SELECT 
-        tp.ID_tipoPermiso,
-        tp.tipo AS tipoPermiso,
+        tp.ID_tipoPermiso as id,
+        tp.ID_Usuario as idUsuario,
+        u.Nombre as nombreUsuario,
+        tp.id_departamento,
+        d.tipo as departamento,
+        tp.tipo,
         tp.mensaje,
-        tp.Fecha_Solicitud,
-        u.ID_Usuario,
-        u.Nombre,
-        u.Email,
-        d.tipo AS departamento,
-        IFNULL(n.Estado, 'Pendiente') AS estadoPermiso
+        tp.Fecha_Solicitud as fechaSolicitud,
+        COALESCE(ep.Estado, 'Pendiente') as estadoPermiso
       FROM TipoPermiso tp
       LEFT JOIN Usuarios u ON tp.ID_Usuario = u.ID_Usuario
       LEFT JOIN Departamento d ON tp.id_departamento = d.id_departamento
-      LEFT JOIN Notificaciones n ON n.ID_tipoPermiso = tp.ID_tipoPermiso
+      LEFT JOIN Notificaciones n ON tp.ID_tipoPermiso = n.ID_tipoPermiso
+      LEFT JOIN EstadoPermisos ep ON n.ID_EstadoPermiso = ep.ID_EstadoPermiso
       ORDER BY tp.Fecha_Solicitud DESC
-    `;
-
-    db.query(sql, (err, results) => {
-      if (err) {
-        console.error('Error en /permisos/lista:', err.message);
-        return res.status(500).json({ error: err.message });
-      }
-      console.log('Resultados de /permisos/lista:', results.length, 'registros');
-      if (results.length > 0) {
-        console.log('Primer registro:', JSON.stringify(results[0], null, 2));
-      }
-      res.json(results);
-    });
+    `);
+    res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error al obtener lista de permisos:', error);
+    res.status(500).json({ error: 'Error al obtener lista de permisos' });
   }
 });
 
