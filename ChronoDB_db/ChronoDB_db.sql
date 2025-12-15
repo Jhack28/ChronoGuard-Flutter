@@ -108,7 +108,7 @@ VALUES
 -- Usuarios con departamento asignado
 INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, id_departamento, Numero_de_Documento, Estado)
 VALUES
-('mario', 'empleado@correo.com', MD5('empleado123'), 3, 4, 2534, 'Activo'),
+('mario', 'mario.empleado@correo.com', MD5('empleado123'), 3, 4, 2534, 'Activo'),
 ('camilo', 'cami@correo.com', MD5('empleado123'), 3, 2, 232534, 'Activo'),
 ('fernando', 'fer@correo.com', MD5('empleado123'), 3, 1, 22332534, 'Inactivo'),
 ('andres', 'andres@correo.com', MD5('empleado321'), 3, 3, 3498234, 'Activo'),

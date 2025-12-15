@@ -92,14 +92,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
     try {
       final lista = await ApiService.fetchPermisos();
+      print(
+        'Permisos cargados: ${lista.map((p) => {'id': p.idTipoPermiso, 'estado': p.estadoPermiso}).toList()}',
+      );
       // Ordenar localmente: primero Pendiente, luego Aprobado, luego Rechazado
       lista.sort((a, b) {
         final sa = a.estadoPermiso.toLowerCase();
         final sb = b.estadoPermiso.toLowerCase();
         int rank(String s) {
-          if (s.contains('Pendientes')) return 0;
-          if (s.contains('Aprobados')) return 1;
-          if (s.contains('Rechazado')) return 2;
+          if (s == 'pendiente') return 0;
+          if (s == 'aprobado') return 1;
+          if (s == 'rechazado') return 2;
           return 3;
         }
 
