@@ -35,13 +35,15 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     }
   }
 
+  /// Cambia el estado usando el endpoint ESPECÍFICO de secretaria
   Future<void> _cambiarEstadoPermiso(
     int idPermiso,
     String nuevoEstado, [
     VoidCallback? refreshDialog,
   ]) async {
     try {
-      await ApiService.actualizarEstadoPermiso(idPermiso, nuevoEstado);
+      // NUEVA RUTA: /permisos/:id/estado-secretaria
+      await ApiService.actualizarEstadoPermisoSecretaria(idPermiso, nuevoEstado);
       await _cargarPermisos();
       refreshDialog?.call();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -448,7 +450,8 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                                                 .toList();
 
                                     return Dialog(
-                                      insetPadding: const EdgeInsets.all(24),
+                                      insetPadding:
+                                          const EdgeInsets.all(24),
                                       child: ConstrainedBox(
                                         constraints: const BoxConstraints(
                                           maxWidth: 800,
@@ -480,7 +483,8 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                                                     icon: const Icon(
                                                         Icons.close),
                                                     onPressed: () =>
-                                                        Navigator.pop(context),
+                                                        Navigator.pop(
+                                                            context),
                                                   ),
                                                 ],
                                               ),
@@ -557,19 +561,20 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                                                           CircularProgressIndicator(),
                                                     )
                                                   : SingleChildScrollView(
-                                                      child: SecrePermisosTable(
+                                                      child:
+                                                          SecrePermisosTable(
                                                         permisos:
                                                             permisosFiltrados,
                                                         loading:
                                                             loadingPermisos,
-                                                        onCambiarEstado:
-                                                            (id, estado) =>
-                                                                _cambiarEstadoPermiso(
+                                                        // IMPORTANTE: usa el método de secretaria
+                                                        onCambiarEstado: (id,
+                                                                estado) =>
+                                                            _cambiarEstadoPermiso(
                                                           id,
                                                           estado,
-                                                          () =>
-                                                              setStateDialog(
-                                                                  () {}),
+                                                          () => setStateDialog(
+                                                              () {}),
                                                         ),
                                                       ),
                                                     ),
@@ -601,8 +606,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                               },
                             );
                           },
-                          child:
-                              const Text('Generar Reporte de permisos'),
+                          child: const Text('Generar Reporte de permisos'),
                         ),
                       ),
                     ],

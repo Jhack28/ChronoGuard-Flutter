@@ -169,6 +169,22 @@ static Future<List<Permiso>> fetchPermisos() async {
   }
 }
 
+  //actualizar estado del permiso SECRETARIA//
+
+  static Future<void> actualizarEstadoPermisoSecretaria(
+    int idPermiso,
+    String nuevoEstado,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/permisos/$idPermiso/estado-secretaria'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'nuevoEstado': nuevoEstado}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al actualizar estado del permiso por secretaria');
+    }
+  }
 
   /// Actualizar estado del permiso
   static Future<void> actualizarEstadoPermiso(
