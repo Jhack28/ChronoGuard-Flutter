@@ -1690,7 +1690,7 @@ app.get('/permisos/lista', async (req, res) => {
  *       500:
  *         description: Error interno del servidor
  */
-/*app.put('/permisos/:idPermiso/estado', (req, res) => {
+app.put('/permisos/:idPermiso/estado', (req, res) => {
   const idPermiso = req.params.idPermiso;
   const { nuevoEstado } = req.body;
 
@@ -1712,7 +1712,6 @@ app.get('/permisos/lista', async (req, res) => {
     });
   });
 });
-*/
 
 
 // ================== ENDPOINT: CREAR PERMISO ==================
@@ -2224,80 +2223,6 @@ app.put('/permisos/:id/estado', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar estado de permiso' });
   }
 });
-
-/**
- * @swagger
- * /permisos/{idPermiso}/estado-secretaria:
- *   put:
- *     summary: Secretaria aprueba o rechaza un permiso (solo si está Pendiente)
- *     tags:
- *       - Permisos
- *     parameters:
- *       - in: path
- *         name: idPermiso
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del permiso a actualizar
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               nuevoEstado:
- *                 type: string
- *                 enum:
- *                   - Aprobado
- *                   - Rechazado
- *                 description: Nuevo estado que asignará la secretaria
- *     responses:
- *       200:
- *         description: Estado actualizado correctamente
- *       400:
- *         description: Estado inválido
- *       409:
- *         description: El permiso ya no está pendiente
- *       500:
- *         description: Error interno del servidor
- */
-app.put('/permisos/:idPermiso/estado-secretaria', (req, res) => {
-  const idPermiso = req.params.idPermiso;
-  const { nuevoEstado } = req.body; // 'Aprobado' o 'Rechazado'
-
-  if (!['Aprobado', 'Rechazado'].includes(nuevoEstado)) {
-    return res.status(400).json({ error: 'Estado inválido' });
-  }
-
-  db.query(
-    'SELECT ID_EstadoPermiso FROM EstadoPermisos WHERE Estado = ?',
-    [nuevoEstado],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (results.length === 0)
-        return res.status(400).json({ error: 'Estado inválido' });
-
-      const idEstado = results[0].ID_EstadoPermiso;
-
-      const sqlUpdate = `
-        UPDATE Notificaciones 
-        SET Estado = ?, ID_EstadoPermiso = ?
-        WHERE ID_tipoPermiso = ? AND Estado = 'Pendiente'
-      `;
-      db.query(sqlUpdate, [nuevoEstado, idEstado, idPermiso], (err2, result) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-        if (result.affectedRows === 0) {
-          return res
-            .status(409)
-            .json({ error: 'El permiso ya no está pendiente' });
-        }
-        res.json({ message: 'Estado actualizado correctamente' });
-      });
-    }
-  );
-});
-
 
 // ================== ENDPOINT: ELIMINAR PERMISO ==================
 /**
