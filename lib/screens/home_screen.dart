@@ -384,8 +384,7 @@
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Aquí podrás navegar a tu pantalla de recuperación
-                          // Navigator.pushNamed(context, '/recuperar');
+                        Navigator.pushNamed(context, '/recuperar');
                         },
                         child: Text("Recuperar contraseña"),
                       ),
