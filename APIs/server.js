@@ -2152,7 +2152,7 @@ app.delete('/permisos/:id', async (req, res) => {
  * @swagger
  * /recuperar-contrasena:
  *   post:
- *     summary: Recuperar/cambiar contraseña usando ID de usuario y correo
+ *     summary: Recuperar/cambiar contraseña usando documento y correo
  *     requestBody:
  *       required: true
  *       content:
@@ -2160,13 +2160,13 @@ app.delete('/permisos/:id', async (req, res) => {
  *           schema:
  *             type: object
  *             required:
- *               - idUsuario
+ *               - numeroDocumento
  *               - email
  *               - nuevaContrasena
  *             properties:
- *               idUsuario:
- *                 type: integer
- *                 description: ID_Usuario del sistema
+ *               numeroDocumento:
+ *                 type: string
+ *                 description: Número_de_Documento del usuario
  *               email:
  *                 type: string
  *                 format: email
@@ -2177,44 +2177,27 @@ app.delete('/permisos/:id', async (req, res) => {
  *     responses:
  *       200:
  *         description: Resultado de la operación
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
  *       400:
  *         description: Datos inválidos
  *       500:
  *         description: Error interno del servidor
  */
 app.post('/recuperar-contrasena', (req, res) => {
-  const { idUsuario, email, nuevaContrasena } = req.body;
+  const { numeroDocumento, email, nuevaContrasena } = req.body;
 
-  if (!idUsuario || !email || !nuevaContrasena) {
+  if (!numeroDocumento || !email || !nuevaContrasena) {
     return res.status(400).json({
       success: false,
-      message: 'Faltan datos requeridos (idUsuario, email, nuevaContrasena)',
-    });
-  }
-
-  const idNum = parseInt(idUsuario, 10);
-  if (Number.isNaN(idNum)) {
-    return res.status(400).json({
-      success: false,
-      message: 'idUsuario inválido',
+      message: 'Faltan datos requeridos (numeroDocumento, email, nuevaContrasena)',
     });
   }
 
   const nuevaMd5 = crypto.createHash('md5').update(nuevaContrasena).digest('hex');
 
-  // Verificar que el ID_Usuario y el Email coinciden
+  // Verificar que el documento y el Email coinciden
   db.query(
-    'SELECT ID_Usuario FROM Usuarios WHERE ID_Usuario = ? AND Email = ?',
-    [idNum, email],
+    'SELECT ID_Usuario FROM Usuarios WHERE Numero_de_Documento = ? AND Email = ?',
+    [numeroDocumento, email],
     (err, results) => {
       if (err) {
         console.error('Error en consulta de verificación recuperar-contrasena:', err);
@@ -2227,14 +2210,15 @@ app.post('/recuperar-contrasena', (req, res) => {
       if (results.length === 0) {
         return res.status(200).json({
           success: false,
-          message: 'ID de usuario y correo no coinciden',
+          message: 'Documento y correo no coinciden',
         });
       }
 
-      // Actualizar contraseña
+      const idUsuario = results[0].ID_Usuario;
+
       db.query(
         'UPDATE Usuarios SET Password = ? WHERE ID_Usuario = ?',
-        [nuevaMd5, idNum],
+        [nuevaMd5, idUsuario],
         (err2) => {
           if (err2) {
             console.error('Error al actualizar la contraseña en recuperar-contrasena:', err2);

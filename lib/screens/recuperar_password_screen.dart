@@ -13,7 +13,7 @@ class RecuperarPasswordScreen extends StatefulWidget {
 
 class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _idUsuarioCtrl = TextEditingController();
+  final _documentoCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _nuevaCtrl = TextEditingController();
   bool _obscureNueva = true;
@@ -28,7 +28,7 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
         Uri.parse('${ApiService.baseUrl}/recuperar-contrasena'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'idUsuario': int.parse(_idUsuarioCtrl.text.trim()),
+          'numeroDocumento': _documentoCtrl.text.trim(),
           'email': _emailCtrl.text.trim(),
           'nuevaContrasena': _nuevaCtrl.text.trim(),
         }),
@@ -61,7 +61,7 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
 
   @override
   void dispose() {
-    _idUsuarioCtrl.dispose();
+    _documentoCtrl.dispose();
     _emailCtrl.dispose();
     _nuevaCtrl.dispose();
     super.dispose();
@@ -94,22 +94,19 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
               child: ListView(
                 children: [
                   const Text(
-                    'Ingresa tu ID de usuario y tu correo registrado para establecer una nueva contraseña.',
+                    'Ingresa tu número de documento y tu correo registrado para establecer una nueva contraseña.',
                     style: TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
-                    controller: _idUsuarioCtrl,
+                    controller: _documentoCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'ID Usuario',
+                      labelText: 'Número de documento',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Ingresa tu ID de usuario';
-                      }
-                      if (int.tryParse(v.trim()) == null) {
-                        return 'El ID debe ser numérico';
+                        return 'Ingresa tu número de documento';
                       }
                       return null;
                     },
