@@ -793,6 +793,39 @@ app.post('/asistencia/registrar', (req, res) => {
 // para evitar manejo inconsistente y rutas duplicadas.
 
 // Mejor versión asincrónica y más robusta de /asistencia/entrada
+/**
+ * @swagger
+ * /asistencia/entrada:
+ *   post:
+ *     summary: Registrar entrada de asistencia (hora Colombia)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *               id:
+ *                 type: integer
+ *                 description: Alias opcional de ID_Usuario
+ *               idUsuario:
+ *                 type: integer
+ *                 description: Alias opcional de ID_Usuario
+ *               Nombre:
+ *                 type: string
+ *                 description: Nombre del empleado (opcional, se resuelve desde la BD si no viene)
+ *     responses:
+ *       201:
+ *         description: Entrada registrada correctamente
+ *       400:
+ *         description: Datos inválidos o faltantes
+ *       409:
+ *         description: Ya existe una entrada abierta
+ *       500:
+ *         description: Error interno del servidor
+ */
 app.post('/asistencia/entrada', async (req, res) => {
   try {
     const ID_Usuario = req.body?.ID_Usuario || req.body?.id || req.body?.idUsuario;
@@ -816,18 +849,26 @@ app.post('/asistencia/entrada', async (req, res) => {
     // Si no tenemos Nombre, intentamos obtenerlo desde Usuarios
     if (!Nombre) {
       try {
-        const [userRows] = await db.promise().query('SELECT Nombre FROM Usuarios WHERE ID_Usuario = ?', [idNum]);
+        const [userRows] = await db
+          .promise()
+          .query('SELECT Nombre FROM Usuarios WHERE ID_Usuario = ?', [idNum]);
         if (userRows && userRows.length > 0) Nombre = userRows[0].Nombre;
       } catch (errU) {
         console.warn('No se pudo resolver Nombre desde Usuarios:', errU.message || errU);
       }
     }
 
-    const entradaVal = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const [insertResult] = await db.promise().query(
-      `INSERT INTO Asistencias (ID_Usuario, Nombre, Entrada, Estado) VALUES (?, ?, ?, ?)`,
-      [idNum, Nombre || null, entradaVal, 'Entrada']
-    );
+    // Hora actual de Colombia (UTC-5)
+    const now = new Date();
+    const colombiaMs = now.getTime() - 5 * 60 * 60 * 1000;
+    const entradaVal = new Date(colombiaMs).toISOString().slice(0, 19).replace('T', ' ');
+
+    const [insertResult] = await db
+      .promise()
+      .query(
+        `INSERT INTO Asistencias (ID_Usuario, Nombre, Entrada, Estado) VALUES (?, ?, ?, ?)`,
+        [idNum, Nombre || null, entradaVal, 'Entrada']
+      );
 
     console.log(`/asistencia/entrada -> ID_Usuario=${idNum} insertId=${insertResult.insertId}`);
     return res.status(201).json({ message: 'Entrada registrada', id: insertResult.insertId });
@@ -837,6 +878,36 @@ app.post('/asistencia/entrada', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /asistencia/salida:
+ *   post:
+ *     summary: Registrar salida de asistencia (hora Colombia)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ID_Usuario:
+ *                 type: integer
+ *               id:
+ *                 type: integer
+ *                 description: Alias opcional de ID_Usuario
+ *               idUsuario:
+ *                 type: integer
+ *                 description: Alias opcional de ID_Usuario
+ *     responses:
+ *       200:
+ *         description: Salida registrada correctamente
+ *       400:
+ *         description: Datos inválidos o faltantes
+ *       404:
+ *         description: No hay entrada abierta para cerrar
+ *       500:
+ *         description: Error interno del servidor
+ */
 /**
  * Registrar salida: actualiza la última asistencia sin Salida para el usuario
  * POST /asistencia/salida
@@ -852,21 +923,39 @@ app.post('/asistencia/salida', async (req, res) => {
     const ID_Usuario = parseInt(rawId, 10);
     if (isNaN(ID_Usuario)) return res.status(400).json({ error: 'ID_Usuario inválido' });
 
-    // Primero obtener la ID_Asistencia de la última entrada abierta
-    // Ampliamos la condición para cubrir casos donde Estado = 'Entrada' aunque Salida no sea null por inconsistencias.
-    const [rows] = await db.promise().query(
-      `SELECT ID_Asistencia, Salida, Estado FROM Asistencias WHERE ID_Usuario = ? AND (Salida IS NULL OR Estado = 'Entrada') ORDER BY ID_Asistencia DESC LIMIT 1`,
-      [ID_Usuario]
+    // Obtener la última entrada abierta
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT ID_Asistencia, Salida, Estado
+         FROM Asistencias
+         WHERE ID_Usuario = ?
+           AND (Salida IS NULL OR Estado = 'Entrada')
+         ORDER BY ID_Asistencia DESC
+         LIMIT 1`,
+        [ID_Usuario]
+      );
+    console.log(
+      '/asistencia/salida -> filas encontradas:',
+      rows && rows.length ? rows.length : 0,
+      rows && rows[0] ? rows[0] : 'n/a'
     );
-    console.log('/asistencia/salida -> filas encontradas:', rows && rows.length ? rows.length : 0, rows && rows[0] ? rows[0] : 'n/a');
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({ error: 'No se encontró entrada abierta para cerrar' });
     }
 
-  const idAsistencia = rows[0].ID_Asistencia;
-    const updateSql = `UPDATE Asistencias SET Salida = NOW(), Estado = 'Salida' WHERE ID_Asistencia = ?`;
-    const [result] = await db.promise().query(updateSql, [idAsistencia]);
+    const idAsistencia = rows[0].ID_Asistencia;
+
+    // Hora actual de Colombia (UTC-5)
+    const now = new Date();
+    const colombiaMs = now.getTime() - 5 * 60 * 60 * 1000;
+    const salidaVal = new Date(colombiaMs).toISOString().slice(0, 19).replace('T', ' ');
+
+    const updateSql =
+      `UPDATE Asistencias SET Salida = ?, Estado = 'Salida' WHERE ID_Asistencia = ?`;
+    const [result] = await db.promise().query(updateSql, [salidaVal, idAsistencia]);
+
     if (result && result.affectedRows && result.affectedRows > 0) {
       console.log(`/asistencia/salida -> ID_Usuario=${ID_Usuario} ID_Asistencia=${idAsistencia}`);
       return res.json({ message: 'Salida registrada', idAsistencia });
