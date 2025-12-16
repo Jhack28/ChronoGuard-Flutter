@@ -1077,6 +1077,32 @@ app.post("/horarios/registrar", (req, res) => {
  *     responses:
  *       200:
  *         description: Lista de asistencias
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: ID de la asistencia
+ *                   idUsuario:
+ *                     type: integer
+ *                     description: ID del usuario
+ *                   nombre:
+ *                     type: string
+ *                     description: Nombre del empleado
+ *                   entrada:
+ *                     type: string
+ *                     description: Fecha y hora de entrada en formato 12H (YYYY-MM-DD hh:mm:ss AM/PM)
+ *                   salida:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Fecha y hora de salida en formato 12H (YYYY-MM-DD hh:mm:ss AM/PM)
+ *                   estado:
+ *                     type: string
+ *                     description: Estado de la asistencia (Entrada/Salida)
  */
 app.get('/asistencia/lista', (req, res) => {
   db.query(
@@ -1084,8 +1110,8 @@ app.get('/asistencia/lista', (req, res) => {
       a.ID_Asistencia AS id,
       a.ID_Usuario AS idUsuario,
       COALESCE(u.Nombre, a.Nombre) AS nombre,
-      DATE_FORMAT(a.Entrada, '%Y-%m-%dT%H:%i:%s') AS entrada,
-      DATE_FORMAT(a.Salida, '%Y-%m-%dT%H:%i:%s') AS salida,
+      DATE_FORMAT(a.Entrada, '%Y-%m-%d %r') AS entrada,
+      DATE_FORMAT(a.Salida, '%Y-%m-%d %r') AS salida,
       a.Estado AS estado
       FROM Asistencias a
       LEFT JOIN Usuarios u ON u.ID_Usuario = a.ID_Usuario
