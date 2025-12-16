@@ -200,5 +200,12 @@ select*from notificaciones;
 select*from horarios;
 select*from estadopermisos;
 select*from tipopermiso;
-select*from Asistencias;
+SELECT 
+  ID_Asistencia,
+  ID_Usuario,
+  Nombre,
+  DATE_FORMAT(Entrada, '%Y-%m-%d %r') AS Entrada,
+  DATE_FORMAT(Salida,  '%Y-%m-%d %r') AS Salida,
+  Estado
+FROM Asistencias;
 
