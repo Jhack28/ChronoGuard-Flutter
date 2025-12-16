@@ -17,18 +17,17 @@ class Permiso {
     required this.idUsuario,
     required this.nombreUsuario,
     required this.emailUsuario,
-    required this.departamento,
-    required this.estadoPermiso,
-  });
+      required this.departamento,
+      required this.estadoPermiso,
+    });
 
-  factory Permiso.fromJson(Map<String, dynamic> json) {
-    final id = json['IDtipoPermiso'] ?? json['ID_tipoPermiso'] ?? json['id'] ?? 0;
-    final tipo = json['tipoPermiso'] ?? json['tipo'] ?? '';
+    factory Permiso.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] ?? json['IDtipoPermiso'] ?? json['ID_tipoPermiso'] ?? json['idPermiso'] ?? 0;
+    final tipo = json['tipo'] ?? json['tipoPermiso'] ?? '';
     final mensaje = json['mensaje'] ?? json['Mensaje'] ?? '';
-  
     DateTime fecha;
     try {
-      final rawFecha =
+      final rawFecha = json['fechaSolicitud'] ??
           json['FechaSolicitud'] ??
           json['Fecha_Solicitud'] ??
           json['fechasolicitud'];
@@ -38,23 +37,20 @@ class Permiso {
     } catch (_) {
       fecha = DateTime.now();
     }
-  
-    final idUsr =
-        json['IDUsuario'] ?? json['ID_Usuario'] ?? json['idUsuario'] ?? 0;
-  
-    final nombre = json['Nombre'] ?? json['nombre'] ?? '';
-    final email = json['Email'] ?? json['email'] ?? '';
-    final dept =
-        json['departamento'] ?? json['Nombre_Departamento'] ?? json['departamento'.toLowerCase()] ?? '';
-  
+    final idUsr = json['idUsuario'] ?? json['IDUsuario'] ?? json['ID_Usuario'] ?? 0;
+    final nombre = json['nombreUsuario'] ?? json['Nombre'] ?? json['nombre'] ?? '';
+    final email = json['email'] ?? json['Email'] ?? ''; // puede venir vacío
+    final dept = json['departamento'] ??
+        json['Nombre_Departamento'] ??
+        json['NombreDepartamento'] ??
+        '';
     final estado = json['estadoPermiso'] ??
         json['Estado'] ??
         json['estado'] ??
         'Pendiente';
-  
-    final estadoFinal =
-        estado.toString().trim().isEmpty ? 'Pendiente' : estado.toString().trim();
-  
+    final estadoFinal = estado.toString().trim().isEmpty
+        ? 'Pendiente'
+        : estado.toString().trim();
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
       tipoPermiso: tipo.toString(),
