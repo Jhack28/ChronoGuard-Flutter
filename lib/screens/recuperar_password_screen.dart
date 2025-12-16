@@ -1,5 +1,3 @@
-// ignore_for_file: library_private_types_in_public_api, prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -16,9 +14,8 @@ class RecuperarPasswordScreen extends StatefulWidget {
 class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _idUsuarioCtrl = TextEditingController();
-  final _actualCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _nuevaCtrl = TextEditingController();
-  bool _obscureActual = true;
   bool _obscureNueva = true;
   bool _loading = false;
 
@@ -27,16 +24,14 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
 
     setState(() => _loading = true);
     try {
-      final body = {
-        'idUsuario': int.parse(_idUsuarioCtrl.text.trim()),
-        'contrasenaActual': _actualCtrl.text.trim(),
-        'nuevaContrasena': _nuevaCtrl.text.trim(),
-      };
-
       final resp = await http.post(
-        Uri.parse('${ApiService.baseUrl}/cambiar-contrasena'),
+        Uri.parse('${ApiService.baseUrl}/recuperar-contrasena'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+        body: jsonEncode({
+          'idUsuario': int.parse(_idUsuarioCtrl.text.trim()),
+          'email': _emailCtrl.text.trim(),
+          'nuevaContrasena': _nuevaCtrl.text.trim(),
+        }),
       );
 
       Map<String, dynamic>? data;
@@ -67,7 +62,7 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
   @override
   void dispose() {
     _idUsuarioCtrl.dispose();
-    _actualCtrl.dispose();
+    _emailCtrl.dispose();
     _nuevaCtrl.dispose();
     super.dispose();
   }
@@ -99,7 +94,7 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
               child: ListView(
                 children: [
                   const Text(
-                    'Ingresa tu ID de usuario y tu contraseña actual para establecer una nueva.',
+                    'Ingresa tu ID de usuario y tu correo registrado para establecer una nueva contraseña.',
                     style: TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 20),
@@ -121,26 +116,17 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _actualCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Contraseña actual',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureActual
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureActual = !_obscureActual;
-                          });
-                        },
-                      ),
+                    controller: _emailCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico',
                     ),
-                    obscureText: _obscureActual,
+                    keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return 'Ingresa tu contraseña actual';
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Ingresa tu correo';
+                      }
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) {
+                        return 'Correo inválido';
                       }
                       return null;
                     },

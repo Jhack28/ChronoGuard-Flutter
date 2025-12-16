@@ -2148,6 +2148,119 @@ app.delete('/permisos/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /recuperar-contrasena:
+ *   post:
+ *     summary: Recuperar contraseña usando ID de usuario y correo
+ *     description: >
+ *       Permite establecer una nueva contraseña verificando que el ID de usuario
+ *       y el correo electrónico coinciden con un registro existente en la base de datos.
+ *       No requiere la contraseña actual.
+ *     tags:
+ *       - Autenticación
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idUsuario
+ *               - email
+ *               - nuevaContrasena
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Correo registrado del usuario
+ *               nuevaContrasena:
+ *                 type: string
+ *                 description: Nueva contraseña en texto plano (se almacenará hasheada con MD5)
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada correctamente o error de validación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Datos inválidos o faltantes
+ *       500:
+ *         description: Error interno del servidor
+ */
+app.post('/recuperar-contrasena', (req, res) => {
+  const { idUsuario, email, nuevaContrasena } = req.body;
+
+  if (!idUsuario || !email || !nuevaContrasena) {
+    return res.status(400).json({
+      success: false,
+      message: 'Faltan datos requeridos (idUsuario, email, nuevaContrasena)',
+    });
+  }
+
+  const idNum = parseInt(idUsuario, 10);
+  if (Number.isNaN(idNum)) {
+    return res.status(400).json({
+      success: false,
+      message: 'idUsuario inválido',
+    });
+  }
+
+  // Hashear nueva contraseña con MD5 (igual que en login/creación de usuario)
+  const nuevaMd5 = crypto.createHash('md5').update(nuevaContrasena).digest('hex');
+
+  // Verificar que ID + Email coinciden
+  db.query(
+    'SELECT IDUsuario FROM Usuarios WHERE IDUsuario = ? AND Email = ?',
+    [idNum, email],
+    (err, results) => {
+      if (err) {
+        console.error('Error en consulta de verificación recuperar-contrasena:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Error interno del servidor',
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(200).json({
+          success: false,
+          message: 'ID de usuario y correo no coinciden',
+        });
+      }
+
+      // Coinciden: actualizar contraseña
+      db.query(
+        'UPDATE Usuarios SET Password = ? WHERE IDUsuario = ?',
+        [nuevaMd5, idNum],
+        (err2) => {
+          if (err2) {
+            console.error('Error al actualizar la contraseña en recuperar-contrasena:', err2);
+            return res.status(500).json({
+              success: false,
+              message: 'Error al actualizar la contraseña',
+            });
+          }
+
+          return res.json({
+            success: true,
+            message: 'Contraseña actualizada correctamente',
+          });
+        },
+      );
+    },
+  );
+});
+
 // Iniciar el servidor en puerto 3000
 const PORT = 3000;
 const HOST = process.env.APIHOST || '0.0.0.0';
