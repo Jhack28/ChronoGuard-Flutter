@@ -1690,7 +1690,7 @@ app.get('/permisos/lista', async (req, res) => {
  *       500:
  *         description: Error interno del servidor
  */
-app.put('/permisos/:idPermiso/estado', (req, res) => {
+/*app.put('/permisos/:idPermiso/estado', (req, res) => {
   const idPermiso = req.params.idPermiso;
   const { nuevoEstado } = req.body;
 
@@ -1712,6 +1712,7 @@ app.put('/permisos/:idPermiso/estado', (req, res) => {
     });
   });
 });
+*/
 
 
 // ================== ENDPOINT: CREAR PERMISO ==================

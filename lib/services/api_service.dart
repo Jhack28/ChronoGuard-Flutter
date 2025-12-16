@@ -169,7 +169,7 @@ static Future<List<Permiso>> fetchPermisos() async {
   }
 }
 
-  //actualizar estado del permiso SECRETARIA//
+  ///actualizar estado del permiso SECRETARIA
 
   static Future<void> actualizarEstadoPermisoSecretaria(
     int idPermiso,
@@ -186,7 +186,7 @@ static Future<List<Permiso>> fetchPermisos() async {
     }
   }
 
-  /// Actualizar estado del permiso
+  /// Actualizar estado del permiso admin
   static Future<void> actualizarEstadoPermiso(
     int idPermiso,
     String nuevoEstado,
