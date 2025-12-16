@@ -74,7 +74,7 @@ void initState() {
   _cargarPermisos();
 
     // refresco automático cada 10 segundos
-    _timerAuto = Timer.periodic(const Duration(seconds: 10), (_) {
+    _timerAuto = Timer.periodic(const Duration(seconds: 30), (_) {
       _cargarEmpleados();
       _cargarHorarios();
       _cargarPermisos();
