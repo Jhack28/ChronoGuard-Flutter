@@ -22,7 +22,6 @@ class Permiso {
   });
 
   factory Permiso.fromJson(Map<String, dynamic> json) {
-    print('DEBUG Permiso.fromJson -> $json'); 
     // ID del permiso
     final id = json['id'] ??
         json['IDtipoPermiso'] ??

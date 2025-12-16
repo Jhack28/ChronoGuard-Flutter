@@ -13,6 +13,34 @@ class SecrePermisosTable extends StatelessWidget {
     super.key,
   });
 
+  Widget _buildEstadoChip(String estado) {
+    String estadoMostrar = estado.isEmpty ? 'Pendiente' : estado;
+
+    Color color;
+    Color backgroundColor;
+    switch (estadoMostrar.toLowerCase()) {
+      case 'aprobado':
+        color = Colors.white;
+        backgroundColor = Colors.green;
+        break;
+      case 'rechazado':
+        color = Colors.white;
+        backgroundColor = Colors.red;
+        break;
+      case 'pendiente':
+      default:
+        color = Colors.black;
+        backgroundColor = Colors.orange;
+    }
+    return Chip(
+      label: Text(
+        estadoMostrar,
+        style: TextStyle(fontWeight: FontWeight.bold, color: color),
+      ),
+      backgroundColor: backgroundColor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -58,36 +86,40 @@ class SecrePermisosTable extends StatelessWidget {
                           )[0],
                         ),
                       ),
-                      DataCell(Text(permiso.estadoPermiso)),
+                      DataCell(_buildEstadoChip(permiso.estadoPermiso)),
                       DataCell(
                         Row(
                           children: [
-                            if (permiso.estadoPermiso == 'Pendiente') ...[
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.check,
-                                  color: Colors.green,
-                                ),
-                                tooltip: 'Aprobar',
-                                onPressed: () => onCambiarEstado(
-                                  permiso.idTipoPermiso,
-                                  'Aprobado',
-                                ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.red,
-                                ),
-                                tooltip: 'Rechazar',
-                                onPressed: () => onCambiarEstado(
-                                  permiso.idTipoPermiso,
-                                  'Rechazado',
-                                ),
+                              tooltip: 'Aprobar',
+                              onPressed: () => onCambiarEstado(
+                                permiso.idTipoPermiso,
+                                'Aprobado',
                               ),
-                            ] else ...[
-                              Text(permiso.estadoPermiso),
-                            ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              tooltip: 'Rechazar',
+                              onPressed: () => onCambiarEstado(
+                                permiso.idTipoPermiso,
+                                'Rechazado',
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.undo,
+                                color: Colors.orange,
+                              ),
+                              tooltip: 'Devolver a pendiente',
+                              onPressed: () => onCambiarEstado(
+                                permiso.idTipoPermiso,
+                                'Pendiente',
+                              ),
+                            ),
                           ],
                         ),
                       ),

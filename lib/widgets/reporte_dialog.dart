@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 void mostrarDialogoReporte(BuildContext context) {
-  String fechaInicio = '', fechaFin = '', empleado = '', estado = '';
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
@@ -9,15 +8,24 @@ void mostrarDialogoReporte(BuildContext context) {
       content: SingleChildScrollView(
         child: Column(
           children: [
-            TextField(decoration: const InputDecoration(labelText: 'Fecha Inicio'), onChanged: (v) => fechaInicio = v),
-            TextField(decoration: const InputDecoration(labelText: 'Fecha Fin'), onChanged: (v) => fechaFin = v),
-            TextField(decoration: const InputDecoration(labelText: 'Empleado (Opcional)'), onChanged: (v) => empleado = v),
+            const TextField(
+              decoration: InputDecoration(labelText: 'Fecha Inicio'),
+            ),
+            const TextField(
+              decoration: InputDecoration(labelText: 'Fecha Fin'),
+            ),
+            const TextField(
+              decoration: InputDecoration(labelText: 'Empleado (Opcional)'),
+            ),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Estado (Opcional)'),
-              items: ['Todos', 'Puntual', 'Tarde', 'Ausente']
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: (v) => estado = v ?? '',
+              items: [
+                'Todos',
+                'Puntual',
+                'Tarde',
+                'Ausente',
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (v) {},
             ),
           ],
         ),
@@ -27,11 +35,15 @@ void mostrarDialogoReporte(BuildContext context) {
           child: const Text('Generar'),
           onPressed: () {
             Navigator.pop(context);
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text('Reporte generado (simulado)')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Reporte generado (simulado)')),
+            );
           },
         ),
-        TextButton(child: const Text('Cancelar'), onPressed: () => Navigator.pop(context)),
+        TextButton(
+          child: const Text('Cancelar'),
+          onPressed: () => Navigator.pop(context),
+        ),
       ],
     ),
   );

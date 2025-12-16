@@ -49,24 +49,27 @@ class _AdminPermisosTableState extends State<AdminPermisosTable> {
     String estadoMostrar = estado.isEmpty ? 'Pendiente' : estado;
 
     Color color;
+    Color backgroundColor;
     switch (estadoMostrar.toLowerCase()) {
       case 'aprobado':
-        color = Colors.green;
+        color = Colors.white;
+        backgroundColor = Colors.green;
         break;
       case 'rechazado':
-        color = Colors.red;
+        color = Colors.white;
+        backgroundColor = Colors.red;
         break;
       case 'pendiente':
       default:
-        color = Colors.orange;
+        color = Colors.black;
+        backgroundColor = Colors.orange;
     }
     return Chip(
       label: Text(
         estadoMostrar,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.bold, color: color),
       ),
-      backgroundColor: const Color.fromARGB(183, 61, 245, 255),
-      labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+      backgroundColor: backgroundColor,
     );
   }
 
