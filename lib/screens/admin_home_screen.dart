@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/Horarios.dart';
 import '../models/usuario.dart';
@@ -42,13 +43,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     'Transporte',
   ];
 
-  @override
-  void initState() {
-    super.initState();
+  // Timer para refrescar permisos automáticamente
+// Timer para refrescar automáticamente
+Timer? _timerAuto;
+
+@override
+void initState() {
+  super.initState();
+  _cargarEmpleados();
+  _cargarHorarios();
+  _cargarPermisos();
+
+  // refresco automático cada 10 segundos
+  _timerAuto = Timer.periodic(const Duration(seconds: 10), (_) {
     _cargarEmpleados();
     _cargarHorarios();
     _cargarPermisos();
-  }
+  });
+}
+
+@override
+void dispose() {
+  _timerAuto?.cancel();
+  super.dispose();
+}
+
 
   Future<void> _cargarEmpleados() async {
     setState(() {
@@ -92,9 +111,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
     try {
       final lista = await ApiService.fetchPermisos();
-      print(
-        'Permisos cargados: ${lista.map((p) => {'id': p.idTipoPermiso, 'estado': p.estadoPermiso}).toList()}',
-      );
       // Ordenar localmente: primero Pendiente, luego Aprobado, luego Rechazado
       lista.sort((a, b) {
         final sa = a.estadoPermiso.toLowerCase();
@@ -160,9 +176,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void _abrirModalEditar(Usuario usuario) {
     _numeroDocumentoCtrl.text = usuario.documento;
     _nombreCtrl.text = usuario.nombre;
-    _departamentoCtrl.text = usuario.rol == "Empleado"
-        ? usuario.departamento
-        : '';
+    _departamentoCtrl.text =
+        usuario.rol == "Empleado" ? usuario.departamento : '';
     _emailCtrl.text = usuario.email;
     _passwordCtrl.clear();
     _rolSeleccionado = usuario.rol;
@@ -266,8 +281,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               validator: (value) => _isEditing
                   ? null
                   : (value == null || value.isEmpty
-                        ? 'Ingrese una contraseña'
-                        : null),
+                      ? 'Ingrese una contraseña'
+                      : null),
             ),
           ],
         ),
@@ -437,8 +452,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _usuarioEsActivo(Usuario u) {
     try {
       final dyn = u as dynamic;
-      final val =
-          dyn.activo ??
+      final val = dyn.activo ??
           dyn.estado ??
           dyn.isActive ??
           dyn.estado_usuario ??
@@ -484,6 +498,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             onPressed: () {
               _cargarEmpleados();
               _cargarHorarios();
+              _cargarPermisos();
             },
           ),
           IconButton(
@@ -576,7 +591,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           decoration: containerDecoration,
                           padding: containerPadding,
                           child: loadingPermisos
-                              ? const Center(child: CircularProgressIndicator())
+                              ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
                               : AdminPermisosTable(
                                   permisos: permisos,
                                   onRefrescar: _cargarPermisos,

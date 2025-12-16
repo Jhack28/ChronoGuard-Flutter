@@ -1,18 +1,18 @@
-// ignore_for_file: file_names
-
 class Horario {
-  final int? idHorario;
+  final int? id;                // puede ser null cuando se crea nuevo
   final int idUsuario;
+  final String? nombre;         // opcional
   final String dia;
   final String horaEntrada;
   final String horaSalida;
   final String? fechaAsignacion;
-  final int? asignadoPorId; // <-- ID de la secretaria
-  final String? asignadoPor; // <-- Nombre de la secretaria
+  final int? asignadoPorId;
+  final String? asignadoPor;
 
   Horario({
-    this.idHorario,
+    this.id,                    // ya no required
     required this.idUsuario,
+    this.nombre,               // ya no required
     required this.dia,
     required this.horaEntrada,
     required this.horaSalida,
@@ -23,24 +23,25 @@ class Horario {
 
   factory Horario.fromJson(Map<String, dynamic> json) {
     return Horario(
-      idHorario: json['id'] ?? json['ID_Horario'],
-      idUsuario: json['idUsuario'] ?? json['ID_Usuario'],
-      dia: json['dia'] ?? json['Dia'],
-      horaEntrada: json['horaEntrada'] ?? json['Hora_Entrada'],
-      horaSalida: json['horaSalida'] ?? json['Hora_Salida'],
-      fechaAsignacion: json['fechaAsignacion'] ?? json['Fecha_Asignacion'],
-      asignadoPorId: json['asignadoPorId'], // <-- ID
-      asignadoPor: json['asignadoPor'], // <-- Nombre
+      id: json['id'],                       // viene desde la API
+      idUsuario: json['idUsuario'],
+      nombre: json['nombre'],
+      dia: json['dia'],
+      horaEntrada: json['horaEntrada'],
+      horaSalida: json['horaSalida'],
+      fechaAsignacion: json['fechaAsignacion'],
+      asignadoPorId: json['asignadoPorId'],
+      asignadoPor: json['asignadoPor'],
     );
   }
 
+  // Para enviar al backend cuando secretaria crea/edita
   Map<String, dynamic> toJson() {
     return {
       'ID_Usuario': idUsuario,
       'Dia': dia,
       'Hora_Entrada': horaEntrada,
       'Hora_Salida': horaSalida,
-      // No envíes Asignado_Por aquí
     };
   }
 }

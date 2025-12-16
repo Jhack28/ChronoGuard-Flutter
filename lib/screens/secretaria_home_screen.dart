@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/empleado.dart';
 import '../models/Horarios.dart';
@@ -62,12 +63,28 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
   List<Horario> horarios = [];
   int? filtroEmpleadoId;
 
+  // Timer para refrescar automáticamente
+Timer? _timerAuto;
+
+@override
+void initState() {
+  super.initState();
+  _cargarEmpleados();
+  _cargarHorarios();
+  _cargarPermisos();
+
+    // refresco automático cada 10 segundos
+    _timerAuto = Timer.periodic(const Duration(seconds: 10), (_) {
+      _cargarEmpleados();
+      _cargarHorarios();
+      _cargarPermisos();
+    });
+  }
+
   @override
-  void initState() {
-    super.initState();
-    _cargarEmpleados();
-    _cargarHorarios();
-    _cargarPermisos();
+  void dispose() {
+    _timerAuto?.cancel();
+    super.dispose();
   }
 
   String _mapDiaSemana(DateTime fecha) {
@@ -261,7 +278,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   onPressed: () async {
                     if (fechaSeleccionada == null) return;
                     final nuevo = Horario(
-                      idUsuario: selectedId,
+                      idUsuario: selectedId,  
                       dia: _mapDiaSemana(fechaSeleccionada!),
                       horaEntrada: entradaCtrl.text,
                       horaSalida: salidaCtrl.text,

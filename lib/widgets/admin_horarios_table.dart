@@ -43,7 +43,7 @@ class AdminHorariosTable extends StatelessWidget {
             child: DataTable(
               columns: const [
                 DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Empleado (ID)')),
+                DataColumn(label: Text('Empleado')),
                 DataColumn(label: Text('Día')),
                 DataColumn(label: Text('Entrada')),
                 DataColumn(label: Text('Salida')),
@@ -53,8 +53,8 @@ class AdminHorariosTable extends StatelessWidget {
                   .map(
                     (h) => DataRow(
                       cells: [
-                        DataCell(Text(h.idHorario?.toString() ?? '')),
                         DataCell(Text(h.idUsuario.toString())),
+                        DataCell(Text(h.nombre ?? h.idUsuario.toString())),
                         DataCell(Text(h.dia)),
                         DataCell(Text(h.horaEntrada)),
                         DataCell(Text(h.horaSalida)),
