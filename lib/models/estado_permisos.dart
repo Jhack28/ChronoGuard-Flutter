@@ -17,14 +17,25 @@ class Permiso {
     required this.idUsuario,
     required this.nombreUsuario,
     required this.emailUsuario,
-      required this.departamento,
-      required this.estadoPermiso,
-    });
+    required this.departamento,
+    required this.estadoPermiso,
+  });
 
-    factory Permiso.fromJson(Map<String, dynamic> json) {
-    final id = json['id'] ?? json['IDtipoPermiso'] ?? json['ID_tipoPermiso'] ?? json['idPermiso'] ?? 0;
+  factory Permiso.fromJson(Map<String, dynamic> json) {
+    // ID del permiso
+    final id = json['id'] ??
+        json['IDtipoPermiso'] ??
+        json['ID_tipoPermiso'] ??
+        json['idPermiso'] ??
+        0;
+
+    // Tipo de permiso
     final tipo = json['tipo'] ?? json['tipoPermiso'] ?? '';
+
+    // Mensaje
     final mensaje = json['mensaje'] ?? json['Mensaje'] ?? '';
+
+    // Fecha de solicitud
     DateTime fecha;
     try {
       final rawFecha = json['fechaSolicitud'] ??
@@ -37,20 +48,31 @@ class Permiso {
     } catch (_) {
       fecha = DateTime.now();
     }
-    final idUsr = json['idUsuario'] ?? json['IDUsuario'] ?? json['ID_Usuario'] ?? 0;
-    final nombre = json['nombreUsuario'] ?? json['Nombre'] ?? json['nombre'] ?? '';
-    final email = json['email'] ?? json['Email'] ?? ''; // puede venir vacío
+
+    // Usuario
+    final idUsr =
+        json['idUsuario'] ?? json['IDUsuario'] ?? json['ID_Usuario'] ?? 0;
+    final nombre =
+        json['nombreUsuario'] ?? json['Nombre'] ?? json['nombre'] ?? '';
+    final email = json['email'] ?? json['Email'] ?? '';
+
+    // Departamento
     final dept = json['departamento'] ??
         json['Nombre_Departamento'] ??
         json['NombreDepartamento'] ??
         '';
-    final estado = json['estadoPermiso'] ??
-        json['Estado'] ??
-        json['estado'] ??
-        'Pendiente';
-    final estadoFinal = estado.toString().trim().isEmpty
-        ? 'Pendiente'
-        : estado.toString().trim();
+
+    // Estado del permiso (Pendiente/Aprobado/Rechazado)
+    final rawEstado =
+        json['estadoPermiso'] ?? json['Estado'] ?? json['estado'] ?? 'Pendiente';
+    String estado = rawEstado.toString().trim();
+    if (estado.isEmpty) {
+      estado = 'Pendiente';
+    }
+    // Normalizar: primera letra mayúscula, resto minúscula
+    final estadoFinal =
+        estado[0].toUpperCase() + estado.substring(1).toLowerCase();
+
     return Permiso(
       idTipoPermiso: id is int ? id : int.tryParse(id.toString()) ?? 0,
       tipoPermiso: tipo.toString(),
