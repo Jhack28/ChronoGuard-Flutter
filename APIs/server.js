@@ -2152,13 +2152,7 @@ app.delete('/permisos/:id', async (req, res) => {
  * @swagger
  * /recuperar-contrasena:
  *   post:
- *     summary: Recuperar contraseña usando ID de usuario y correo
- *     description: >
- *       Permite establecer una nueva contraseña verificando que el ID de usuario
- *       y el correo electrónico coinciden con un registro existente en la base de datos.
- *       No requiere la contraseña actual.
- *     tags:
- *       - Autenticación
+ *     summary: Recuperar/cambiar contraseña usando ID de usuario y correo
  *     requestBody:
  *       required: true
  *       content:
@@ -2172,17 +2166,17 @@ app.delete('/permisos/:id', async (req, res) => {
  *             properties:
  *               idUsuario:
  *                 type: integer
- *                 description: ID del usuario
+ *                 description: ID_Usuario del sistema
  *               email:
  *                 type: string
  *                 format: email
  *                 description: Correo registrado del usuario
  *               nuevaContrasena:
  *                 type: string
- *                 description: Nueva contraseña en texto plano (se almacenará hasheada con MD5)
+ *                 description: Nueva contraseña en texto plano (se guarda como MD5)
  *     responses:
  *       200:
- *         description: Contraseña actualizada correctamente o error de validación
+ *         description: Resultado de la operación
  *         content:
  *           application/json:
  *             schema:
@@ -2193,7 +2187,7 @@ app.delete('/permisos/:id', async (req, res) => {
  *                 message:
  *                   type: string
  *       400:
- *         description: Datos inválidos o faltantes
+ *         description: Datos inválidos
  *       500:
  *         description: Error interno del servidor
  */
@@ -2215,12 +2209,11 @@ app.post('/recuperar-contrasena', (req, res) => {
     });
   }
 
-  // Hashear nueva contraseña con MD5 (igual que en login/creación de usuario)
   const nuevaMd5 = crypto.createHash('md5').update(nuevaContrasena).digest('hex');
 
-  // Verificar que ID + Email coinciden
+  // Verificar que el ID_Usuario y el Email coinciden
   db.query(
-    'SELECT IDUsuario FROM Usuarios WHERE IDUsuario = ? AND Email = ?',
+    'SELECT ID_Usuario FROM Usuarios WHERE ID_Usuario = ? AND Email = ?',
     [idNum, email],
     (err, results) => {
       if (err) {
@@ -2238,9 +2231,9 @@ app.post('/recuperar-contrasena', (req, res) => {
         });
       }
 
-      // Coinciden: actualizar contraseña
+      // Actualizar contraseña
       db.query(
-        'UPDATE Usuarios SET Password = ? WHERE IDUsuario = ?',
+        'UPDATE Usuarios SET Password = ? WHERE ID_Usuario = ?',
         [nuevaMd5, idNum],
         (err2) => {
           if (err2) {
