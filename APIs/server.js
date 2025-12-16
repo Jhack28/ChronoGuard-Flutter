@@ -284,7 +284,7 @@ app.get('/usuario/lista', (req, res) => {
       CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 1 ELSE 0 END AS activo
     FROM Usuarios u
     LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
-    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento`,
+    LEFT JOIN Departamento d ON u.id_departamento = d.id_departamento`,
     (err, results) => {
       if (err) {
         console.error('Error en consulta SQL:', err);
@@ -319,7 +319,7 @@ app.get('/empleado/lista', (req, res) => {
       CASE WHEN UPPER(COALESCE(u.Estado, '')) = 'ACTIVO' THEN 1 ELSE 0 END AS activo
     FROM Usuarios u
     LEFT JOIN Roles r ON u.ID_Rol = r.ID_Rol
-    LEFT JOIN Departamento d ON u.ID_Departamento = d.ID_Departamento
+    LEFT JOIN Departamento d ON u.id_departamento = d.id_departamento
     WHERE u.ID_Rol = 3`,
     (err, results) => {
       if (err) {
@@ -414,7 +414,7 @@ app.post('/admin', (req, res) => {
   const idDepartamento = departamento || null;
 
   db.query(
-    `INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, ID_Departamento, Estado) 
+    `INSERT INTO Usuarios (Nombre, Email, Password, ID_Rol, Numero_de_Documento, id_departamento, Estado) 
     VALUES (?, ?, ?, ?, ?, ?, 'Activo')`,
     [nombre, email, passwordMd5, idRol, numero_de_documento, idDepartamento],
     (err, result) => {
@@ -470,7 +470,7 @@ app.put('/usuarios/:id', (req, res) => {
 
   db.query(
     `UPDATE Usuarios 
-    SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+    SET Nombre = ?, Email = ?, ID_Rol = ?, id_departamento = ?, Numero_de_Documento = ? 
     WHERE ID_Usuario = ?`,
     [nombre, email, idRol, idDepartamento, numero_de_documento, id],
     (err) => {
@@ -525,7 +525,7 @@ app.put('/usuario/:id', (req, res) => {
   const idDepartamento = departamento || null;
   db.query(
     `UPDATE Usuarios 
-      SET Nombre = ?, Email = ?, ID_Rol = ?, ID_Departamento = ?, Numero_de_Documento = ? 
+      SET Nombre = ?, Email = ?, ID_Rol = ?, id_departamento = ?, Numero_de_Documento = ? 
       WHERE ID_Usuario = ?`,
     [nombre, email, idRol, idDepartamento, numero_de_documento, id],
     (err) => {
