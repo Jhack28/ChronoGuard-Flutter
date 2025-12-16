@@ -112,19 +112,6 @@ class _SecrePermisosTableState extends State<SecrePermisosTable> {
                                       'Rechazado',
                                     ),
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.undo,
-                                color: Colors.orange,
-                              ),
-                              tooltip: 'Devolver a pendiente',
-                              onPressed: widget.loading
-                                  ? null
-                                  : () => widget.onCambiarEstado(
-                                      permiso.idTipoPermiso,
-                                      'Pendiente',
-                                    ),
-                            ),
                           ],
                         ),
                       ),

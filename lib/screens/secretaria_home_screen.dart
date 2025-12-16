@@ -35,10 +35,15 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     }
   }
 
-  Future<void> _cambiarEstadoPermiso(int idPermiso, String nuevoEstado) async {
+  Future<void> _cambiarEstadoPermiso(
+    int idPermiso,
+    String nuevoEstado, [
+    VoidCallback? refreshDialog,
+  ]) async {
     try {
       await ApiService.actualizarEstadoPermiso(idPermiso, nuevoEstado);
       await _cargarPermisos();
+      refreshDialog?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Permiso $idPermiso actualizado a $nuevoEstado'),
@@ -158,8 +163,6 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                   );
                   return;
                 }
-                // Aquí podrías llamar al backend si tienes endpoint de reportes
-                // await ApiService.enviarReporte(idEmpleado, motivo);
                 controller.dispose();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -176,6 +179,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     );
   }
 
+  // ---------- CORREGIDO ----------
   void _mostrarDialogoAsignarHorario() {
     if (empleados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -183,6 +187,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
       );
       return;
     }
+
     int selectedId = empleados.first.id;
     final entradaCtrl = TextEditingController();
     final salidaCtrl = TextEditingController();
@@ -191,80 +196,93 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Asignar Horario'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<int>(
-                value: selectedId,
-                isExpanded: true,
-                items: empleados
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e.id,
-                        child: Text('${e.nombre} (${e.rol})'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) selectedId = v;
-                },
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Asignar Horario'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton<int>(
+                    value: selectedId,
+                    isExpanded: true,
+                    items: empleados
+                        .map(
+                          (e) => DropdownMenuItem<int>(
+                            value: e.id,
+                            child: Text('${e.nombre} (${e.rol})'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setStateDialog(() {
+                          selectedId = v;
+                        });
+                      }
+                    },
+                  ),
+                  TextField(
+                    controller: entradaCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Hora Entrada (HH:mm)',
+                    ),
+                  ),
+                  TextField(
+                    controller: salidaCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Hora Salida (HH:mm)',
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setStateDialog(() {
+                          fechaSeleccionada = picked;
+                        });
+                      }
+                    },
+                    child: const Text('Seleccionar Fecha'),
+                  ),
+                ],
               ),
-              TextField(
-                controller: entradaCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Hora Entrada (HH:mm)',
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
                 ),
-              ),
-              TextField(
-                controller: salidaCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Hora Salida (HH:mm)',
+                ElevatedButton(
+                  onPressed: () async {
+                    if (fechaSeleccionada == null) return;
+                    final nuevo = Horario(
+                      idUsuario: selectedId,
+                      dia: _mapDiaSemana(fechaSeleccionada!),
+                      horaEntrada: entradaCtrl.text,
+                      horaSalida: salidaCtrl.text,
+                    );
+                    final ok =
+                        await ApiService.asignarHorario(nuevo, idSecretaria);
+                    if (ok) {
+                      await _cargarHorarios();
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Guardar'),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) fechaSeleccionada = picked;
-                },
-                child: const Text('Seleccionar Fecha'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (fechaSeleccionada == null) return;
-                final nuevo = Horario(
-                  idUsuario: selectedId,
-                  dia: _mapDiaSemana(fechaSeleccionada!),
-                  horaEntrada: entradaCtrl.text,
-                  horaSalida: salidaCtrl.text,
-                  // asignadoPor: idSecretaria,
-                );
-                final ok = await ApiService.asignarHorario(nuevo, idSecretaria);
-                if (ok) {
-                  await _cargarHorarios();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
   }
+  // -------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +290,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
         ? horarios
         : horarios.where((h) => h.idUsuario == filtroEmpleadoId).toList();
 
-  return Scaffold(
+    return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Secretaria'),
         backgroundColor: const Color.fromARGB(255, 0, 207, 187),
@@ -282,6 +300,7 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
             onPressed: () {
               _cargarEmpleados();
               _cargarHorarios();
+              _cargarPermisos();
             },
           ),
           IconButton(
@@ -343,22 +362,22 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                         loading: loadingEmpleados,
                         onAsignarHorario:
                             (idEmpleado, fecha, entrada, salida) async {
-                              try {
-                                final nuevo = Horario(
-                                  idUsuario: idEmpleado,
-                                  dia: _mapDiaSemana(DateTime.parse(fecha)),
-                                  horaEntrada: entrada,
-                                  horaSalida: salida,
-                                );
-                                final ok = await ApiService.asignarHorario(
-                                  nuevo,
-                                  idSecretaria,
-                                );
-                                if (ok) await _cargarHorarios();
-                              } catch (e) {
-                                print("Error al asignar horario: $e");
-                              }
-                            },
+                          try {
+                            final nuevo = Horario(
+                              idUsuario: idEmpleado,
+                              dia: _mapDiaSemana(DateTime.parse(fecha)),
+                              horaEntrada: entrada,
+                              horaSalida: salida,
+                            );
+                            final ok = await ApiService.asignarHorario(
+                              nuevo,
+                              idSecretaria,
+                            );
+                            if (ok) await _cargarHorarios();
+                          } catch (e) {
+                            print("Error al asignar horario: $e");
+                          }
+                        },
                         onEnviarReporte: (idEmpleado, motivo) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -387,16 +406,16 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                                   child: const Text('Cancelar'),
                                 ),
                                 ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
                                   child: const Text('Eliminar'),
                                 ),
                               ],
                             ),
                           );
                           if (confirm == true) {
-                            final ok = await ApiService.eliminarHorario(
-                              idHorario,
-                            );
+                            final ok =
+                                await ApiService.eliminarHorario(idHorario);
                             if (ok) {
                               await _cargarHorarios();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -415,81 +434,175 @@ class _SecretariaHomeScreenState extends State<SecretariaHomeScreen> {
                             await _cargarPermisos();
                             showDialog(
                               context: context,
+                              barrierDismissible: false,
                               builder: (context) {
                                 return StatefulBuilder(
                                   builder: (context, setStateDialog) {
-                                    // Filtrar permisos según estado
-                                    List<Permiso> permisosFiltrados = _filtroEstadoPermiso == 'Todos'
-                                        ? permisos
-                                        : permisos.where((p) => p.estadoPermiso == _filtroEstadoPermiso).toList();
-                                    return AlertDialog(
-                                      title: const Text('Panel de Permisos'),
-                                      content: SizedBox(
-                                        width: 600,
+                                    final permisosFiltrados =
+                                        _filtroEstadoPermiso == 'Todos'
+                                            ? permisos
+                                            : permisos
+                                                .where((p) =>
+                                                    p.estadoPermiso ==
+                                                    _filtroEstadoPermiso)
+                                                .toList();
+
+                                    return Dialog(
+                                      insetPadding: const EdgeInsets.all(24),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 800,
+                                          maxHeight: 600,
+                                        ),
                                         child: Column(
-                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
                                           children: [
-                                            Row(
-                                              children: [
-                                                const Text('Filtrar por estado: '),
-                                                const SizedBox(width: 10),
-                                                DropdownButton<String>(
-                                                  value: _filtroEstadoPermiso,
-                                                  items: [
-                                                    'Todos',
-                                                    'Pendiente',
-                                                    'Aprobado',
-                                                    'Rechazado',
-                                                  ].map((estado) => DropdownMenuItem(
-                                                    value: estado,
-                                                    child: Text(estado),
-                                                  )).toList(),
-                                                  onChanged: (v) {
-                                                    if (v != null) {
-                                                      setStateDialog(() {
-                                                        _filtroEstadoPermiso = v;
-                                                      });
-                                                    }
-                                                  },
-                                                ),
-                                                const Spacer(),
-                                                IconButton(
-                                                  icon: const Icon(Icons.refresh),
-                                                  tooltip: 'Refrescar permisos',
-                                                  onPressed: () async {
-                                                    setStateDialog(() {
-                                                      loadingPermisos = true;
-                                                    });
-                                                    await _cargarPermisos();
-                                                    setStateDialog(() {});
-                                                  },
-                                                ),
-                                              ],
+                                            // HEADER
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    'Panel de Permisos',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                        Icons.close),
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            const SizedBox(height: 10),
+                                            const Divider(height: 1),
+
+                                            // FILTRO
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 8,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                      'Filtrar por estado: '),
+                                                  const SizedBox(width: 10),
+                                                  DropdownButton<String>(
+                                                    value:
+                                                        _filtroEstadoPermiso,
+                                                    items: const [
+                                                      'Todos',
+                                                      'Pendiente',
+                                                      'Aprobado',
+                                                      'Rechazado'
+                                                    ]
+                                                        .map(
+                                                          (estado) =>
+                                                              DropdownMenuItem<
+                                                                  String>(
+                                                            value: estado,
+                                                            child:
+                                                                Text(estado),
+                                                          ),
+                                                        )
+                                                        .toList(),
+                                                    onChanged: (v) {
+                                                      if (v != null) {
+                                                        setStateDialog(() {
+                                                          _filtroEstadoPermiso =
+                                                              v;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                                  const Spacer(),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.refresh,
+                                                    ),
+                                                    tooltip:
+                                                        'Refrescar permisos',
+                                                    onPressed: () async {
+                                                      setStateDialog(
+                                                        () => loadingPermisos =
+                                                            true,
+                                                      );
+                                                      await _cargarPermisos();
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 4),
+
+                                            // TABLA CON SCROLL
                                             Expanded(
-                                              child: SecrePermisosTable(
-                                                permisos: permisosFiltrados,
-                                                loading: loadingPermisos,
-                                                onCambiarEstado: _cambiarEstadoPermiso,
+                                              child: loadingPermisos
+                                                  ? const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    )
+                                                  : SingleChildScrollView(
+                                                      child: SecrePermisosTable(
+                                                        permisos:
+                                                            permisosFiltrados,
+                                                        loading:
+                                                            loadingPermisos,
+                                                        onCambiarEstado:
+                                                            (id, estado) =>
+                                                                _cambiarEstadoPermiso(
+                                                          id,
+                                                          estado,
+                                                          () =>
+                                                              setStateDialog(
+                                                                  () {}),
+                                                        ),
+                                                      ),
+                                                    ),
+                                            ),
+
+                                            // FOOTER
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 8,
+                                              ),
+                                              child: Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text('Cerrar'),
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text('Cerrar'),
-                                        ),
-                                      ],
                                     );
                                   },
                                 );
                               },
                             );
                           },
-                          child: const Text('Generar Reporte de permisos'),
+                          child:
+                              const Text('Generar Reporte de permisos'),
                         ),
                       ),
                     ],
